@@ -1,10 +1,13 @@
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as P from './props.js';
+import * as F from './french.js';
 
 // Every model the stations ask for, by id. A Blender model listed in public/models/manifest.json
 // replaces the procedural one; anything not listed (or that fails to load) falls back.
 // See docs/MODEL_BRIEF.md for the ids, sizes and part names a replacement must keep.
 const BUILDERS = {
+  ship: () => F.ship(),
+  well: () => F.well(),
   canoe_birch: (o) => P.buildCanoe(o),
   canoe_plastic: (o) => P.buildCanoe({ ...o, plastic: true }),
   hiawatha_belt: (o) => P.buildBelt(o),
@@ -53,6 +56,11 @@ export async function makeModel(id, opts = {}) {
       const gltf = await cache.get(id);
       const obj = gltf.scene.clone(true);
       obj.name = id;
+      if (id === 'ship') {
+        obj.userData.deckY = 1.2;
+        obj.userData.flag = obj.getObjectByName('stern_flag');
+        if (!obj.userData.flag) throw new Error('Ship is missing its animated stern flag');
+      }
       if (entry.scale) obj.scale.setScalar(entry.scale);
       obj.traverse((o) => {
         if (o.isMesh && o.name === 'water_mask') { P.asWaterMask(o); return; }

@@ -189,7 +189,7 @@ export async function buildScene(scene, make) {
   // the square (N) with its tree, the well (G), the palisade (O)
   const [nx, nz] = plan(655, 430);
   const tree = place(F.squareTree(), nx, nz, 0, hab);
-  const wellM = F.well();
+  const wellM = await make('well');
   place(wellM, ...plan(528, 705), 0, hab);
   const palisade = new THREE.Group();
   palisade.name = 'palisade';
@@ -299,7 +299,7 @@ export async function buildScene(scene, make) {
 
   // ---------------------------------------------------------------- the ship and the trade beside it
 
-  const ship = F.ship();
+  const ship = await make('ship');
   ship.position.set(PLACES.ship[0], 0, PLACES.ship[1]);
   ship.rotation.y = -1.9; // bow upriver, to the north-north-west
   root.add(ship);
@@ -370,7 +370,7 @@ export async function buildScene(scene, make) {
 
   // Who is where, by stop and month. All the French on the island were men: 79 of them wintered there.
   // `when(st)` decides if a figure shows. Figures with a `path` walk it back and forth.
-  const crowd = new Crowd(220, null);
+  const crowd = new Crowd(220, await make('people'));
   root.add(crowd.group);
   const FR = {
     coat: ['#6b4a32', '#5a5e66', '#3e4a5c', '#7a4030', '#8a7a5a', '#4d5a3a', '#6e6253', '#5b3d3d'],
@@ -397,7 +397,7 @@ export async function buildScene(scene, make) {
   function peskotomuhkati(f) {
     const winter = f.winter;
     return crowd.add({
-      kind: f.kind ?? 'man', longHair: true, hat: null,
+      kind: f.kind ?? 'man', longHair: true, wrap: true, hat: null,
       colors: { coat: winter ? pick(PK.robe) : pick(PK.coat), legs: pick(PK.legs), skin: pick(PK.skin), hair: '#1e1a18', dress: winter ? pick(PK.robe) : pick(PK.coat) },
       ...f,
     });

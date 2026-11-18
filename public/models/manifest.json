@@ -1,6 +1,15 @@
 {
   "_readme": "Models listed here load from this folder; anything else falls back to the procedural stand-in in src/props.js. Copied from the Open Path (wabanaki-wampum-review) on 2026-11-18.",
   "models": {
+    "people": {
+      "file": "people.glb"
+    },
+    "ship": {
+      "file": "ship.glb"
+    },
+    "well": {
+      "file": "well.glb"
+    },
     "canoe_birch": {
       "file": "canoe_birch.glb"
     },

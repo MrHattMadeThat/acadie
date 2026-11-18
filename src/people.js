@@ -1,4 +1,5 @@
-// Cartoon people, posed in code. Copied from ../st-george-3d/src/people.js on 2026-11-18 and adapted for 1604:
+// The crowd poses the Blender meshes from scripts/build-people.py. The fallback geometry and
+// animations were adapted from ../st-george-3d/src/people.js for 1604:
 // Lambert shading to match this scene, felt hats and knitted caps, long hair for anyone (`f.longHair`), and planks and
 // firewood to carry. The horses (Herd) and stone chips (Chips) came along unused.
 //
@@ -386,16 +387,27 @@ const M = {
   local: new THREE.Matrix4(), armL: new THREE.Matrix4(), leg: new THREE.Matrix4(), zero: new THREE.Matrix4().makeScale(0, 0, 0),
 };
 const Q = new THREE.Quaternion(), E = new THREE.Euler(), V = new THREE.Vector3(), S = new THREE.Vector3(), Y = new THREE.Vector3(0, 1, 0), C = new THREE.Color();
+const upperGrip = new THREE.Vector3(), paddleAxis = new THREE.Vector3();
 const local = (x, y, z, rx = 0, ry = 0, rz = 0, order = 'ZYX') => M.local.makeRotationFromEuler(E.set(rx, ry, rz, order)).setPosition(x, y, z);
 
 export class Crowd {
-  constructor(max, toon) {
+  constructor(max, model) {
     this.max = max;
     this.list = [];
     this.group = new THREE.Group();
     this.group.name = 'people';
     const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
-    void toon;
+    const shapes = {};
+    model?.traverse((node) => {
+      if (!node.isMesh) return;
+      const geo = node.geometry;
+      const colors = geo.getAttribute('color');
+      // Blender vertex alpha records which leather, linen and facial details keep their colour.
+      const keep = Float32Array.from({ length: colors.count }, (_, i) => colors.getW(i));
+      geo.setAttribute('keep', new THREE.BufferAttribute(keep, 1));
+      shapes[node.name] = geo;
+    });
+    this.articulated = !!shapes.forearm;
     mat.onBeforeCompile = (sh) => {
       sh.vertexShader = sh.vertexShader
         .replace('#include <common>', '#include <common>\nattribute float keep;')
@@ -416,14 +428,22 @@ export class Crowd {
       this.group.add(m);
       return m;
     };
-    this.parts = {
-      thighL: make('thighL', BODY.thigh()), thighR: make('thighR', BODY.thigh()), shinL: make('shinL', BODY.shin()), shinR: make('shinR', BODY.shin()),
-      torso: make('torso', BODY.torso()),
-      armL: make('armL', BODY.arm()), armR: make('armR', BODY.arm()), head: make('head', BODY.head()),
-      beard: make('beard', BODY.beard()), skirt: make('skirt', BODY.skirt()),
-      hair: make('hair', BODY.hair()), hairLong: make('hairLong', BODY.hairLong()),
-    };
-    this.hats = Object.fromEntries(Object.entries(HATS).map(([k, g]) => [k, make(`hat:${k}`, g())]));
+    this.parts = {};
+    for (const [name, fallback] of Object.entries(BODY)) {
+      const geo = shapes[name] ?? fallback();
+      for (const suffix of ['thigh', 'shin', 'arm'].includes(name) ? ['L', 'R'] : ['']) {
+        this.parts[name + suffix] = make(name + suffix, geo);
+      }
+    }
+    if (this.articulated) {
+      this.parts.wrap = make('wrap', shapes.wrap);
+      this.parts.winterWrap = make('winterWrap', shapes.winterWrap);
+      for (const side of ['L', 'R']) {
+        this.parts['forearm' + side] = make('forearm' + side, shapes.forearm);
+        this.parts['hand' + side] = make('hand' + side, shapes['hand' + side]);
+      }
+    }
+    this.hats = Object.fromEntries(Object.entries(HATS).map(([k, g]) => [k, make(`hat:${k}`, shapes[k] ?? g())]));
     this.tools = Object.fromEntries(Object.entries(TOOLS).map(([k, g]) => [k, make(`tool:${k}`, g())]));
     this.onStrike = null; // (worldPosition) => void, for chips of stone
   }
@@ -446,6 +466,14 @@ export class Crowd {
     const col = f.colors;
     for (const k of ['thighL', 'thighR', 'shinL', 'shinR']) set(this.parts[k], col.legs);
     set(this.parts.torso, col.coat); set(this.parts.armL, col.coat); set(this.parts.armR, col.coat);
+    if (this.articulated) {
+      set(this.parts.wrap, col.coat);
+      set(this.parts.winterWrap, col.coat);
+      for (const side of ['L', 'R']) {
+        set(this.parts['forearm' + side], col.coat);
+        set(this.parts['hand' + side], col.skin);
+      }
+    }
     set(this.parts.head, col.skin); set(this.parts.beard, col.hair); set(this.parts.hair, col.hair ?? '#5a4030'); set(this.parts.hairLong, col.hair ?? '#5a4030'); set(this.parts.skirt, col.dress ?? col.coat);
     if (f.hat) set(this.hats[f.hat], col.hat);
     for (const m of [...Object.values(this.parts), ...Object.values(this.hats), ...Object.values(this.tools)]) m.instanceColor.needsUpdate = true;
@@ -477,7 +505,8 @@ export class Crowd {
       const s = f.scale * CARTOON;
       const y = f.y ? f.y(f) : groundY(f.x, f.z);
       f.lastY = y;
-      M.root.compose(V.set(f.x, y + (pose.bob - pose.drop) * s, f.z), Q.setFromAxisAngle(Y, f.heading + (f.yaw ?? 0)), S.set(s, s, s));
+      const build = this.articulated ? .93 + .14 * f.seed : 1;
+      M.root.compose(V.set(f.x, y + (pose.bob - pose.drop) * s, f.z), Q.setFromAxisAngle(Y, f.heading + (f.yaw ?? 0)), S.set(s * build, s, s * build));
       const woman = f.kind === 'woman' || f.kind === 'girl';
       // legs (hidden under a skirt)
       if (woman) { for (const m of [P.thighL, P.thighR, P.shinL, P.shinR]) m.setMatrixAt(f.i, M.zero); }
@@ -490,24 +519,47 @@ export class Crowd {
       }
       P.skirt.setMatrixAt(f.i, woman ? M.part.multiplyMatrices(M.root, local(0, HIP, 0, -Math.max(pose.legL, pose.legR) * 0.25)) : M.zero);
       M.torso.multiplyMatrices(M.root, local(0, HIP, 0, pose.lean, pose.twist, 0, 'YXZ'));
-      P.torso.setMatrixAt(f.i, M.torso);
-      M.head.multiplyMatrices(M.torso, local(0, 0.66, 0, pose.headPitch, pose.headYaw, 0, 'YXZ'));
+      const torso = this.articulated && f.wrap ? (f.winter ? P.winterWrap : P.wrap) : P.torso;
+      torso.setMatrixAt(f.i, M.torso);
+      M.head.multiplyMatrices(M.torso, local(0, this.articulated ? .613 : .66, 0, pose.headPitch, pose.headYaw, 0, 'YXZ'));
+      if (this.articulated) {
+        const youth = f.kind === 'boy' || f.kind === 'girl' ? 1.13 : 1;
+        M.head.scale(S.set((.93 + .14 * f.seed) * youth, (1.04 - .08 * f.seed) * youth, youth));
+      }
       P.head.setMatrixAt(f.i, M.head);
       P.beard.setMatrixAt(f.i, f.beard ? M.head : M.zero);
       P.hair.setMatrixAt(f.i, M.head);
       P.hairLong.setMatrixAt(f.i, (woman || f.longHair) && f.hat !== 'bonnet' ? M.head : M.zero);
       if (f.hat) this.hats[f.hat].setMatrixAt(f.i, M.head);
-      const armL = M.armL.multiplyMatrices(M.torso, local(0.27, 0.55, 0, -pose.armLp, 0, pose.armLr));
-      P.armL.setMatrixAt(f.i, armL);
-      M.arm.multiplyMatrices(M.torso, local(-0.27, 0.55, 0, -pose.armRp, 0, -pose.armRr));
-      P.armR.setMatrixAt(f.i, M.arm);
+      const armL = M.armL;
+      for (const side of ['L', 'R']) {
+        const left = side === 'L', sign = left ? 1 : -1;
+        const paddling = this.articulated && f.action === 'paddle';
+        const pitch = left ? pose.armLp + (paddling ? .53 : 0) : pose.armRp;
+        const roll = left ? (paddling ? -.66 : pose.armLr) : pose.armRr;
+        const arm = left ? armL : M.arm;
+        const bend = this.articulated ? Math.min(1.28, .17 + Math.max(0, pitch) * .65) : 0;
+        const shoulder = this.articulated ? .197 : .27;
+        arm.multiplyMatrices(M.torso, local(sign * shoulder, this.articulated ? .488 : .55, 0, -pitch + bend * .45, 0, sign * roll));
+        P['arm' + side].setMatrixAt(f.i, arm);
+        if (this.articulated) {
+          arm.multiply(local(0, -.277, 0, -bend));
+          P['forearm' + side].setMatrixAt(f.i, arm);
+          arm.multiply(local(0, -.25, 0));
+          P['hand' + side].setMatrixAt(f.i, arm);
+        }
+      }
       if (f.tool) {
         const tp = pose.tool;
         let tm;
-        if (tp?.root) tm = M.part.multiplyMatrices(M.root, local(tp.x ?? 0, tp.y ?? 0, tp.z ?? 0, tp.rx ?? 0, tp.ry ?? 0, tp.rz ?? 0));
-        else tm = M.part.multiplyMatrices(f.toolHand === 'L' ? armL : M.arm, local(0, -0.6, 0, tp?.rx ?? 0, tp?.ry ?? 0, tp?.rz ?? 0));
+        if (this.articulated && f.tool === 'paddle' && f.action === 'paddle') {
+          upperGrip.set(0, -.055, .025).applyMatrix4(armL);
+          paddleAxis.set(0, -.055, .025).applyMatrix4(M.arm).sub(upperGrip).normalize().negate();
+          tm = M.part.compose(upperGrip.addScaledVector(paddleAxis, -.27 * s), Q.setFromUnitVectors(Y, paddleAxis), S.setScalar(s));
+        } else if (tp?.root) tm = M.part.multiplyMatrices(M.root, local(tp.x ?? 0, tp.y ?? 0, tp.z ?? 0, tp.rx ?? 0, tp.ry ?? 0, tp.rz ?? 0));
+        else tm = M.part.multiplyMatrices(f.toolHand === 'L' ? armL : M.arm, local(0, this.articulated ? -.049 : -.6, this.articulated ? .024 : 0, tp?.rx ?? 0, tp?.ry ?? 0, tp?.rz ?? 0));
         this.tools[f.tool].setMatrixAt(f.i, tm);
-        if (f.tool2) this.tools[f.tool2].setMatrixAt(f.i, M.part.multiplyMatrices(armL, local(0, -0.6, 0)));
+        if (f.tool2) this.tools[f.tool2].setMatrixAt(f.i, M.part.multiplyMatrices(armL, local(0, this.articulated ? -.049 : -.6, 0)));
       }
       if (pose.strike && !f.struck && this.onStrike) {
         // where the blow lands: in front of the figure, about knee height
