@@ -65,7 +65,8 @@ own. Started 2026-11-18. Read `README.md` for the file map and `docs/SOURCES.md`
   scene.js. Peskotomuhkati figures appear as traders in the canoe, at the summer camp, and in March 1605; no
   ceremony, nothing stereotyped.
 - The ice: each floe has its own free stretch of river (`lo`/`hi`) and stops at land instead of riding over it.
-- On the last stop the ship comes in close to the landing (`shipLoading`) and sits on the mud at low tide.
+- On the last stop the ship comes in close to the landing (`shipLoading`), in water deep enough to float at low tide
+  (the bed drops steeply off the island now, so grounding there would leave her hanging over water).
 
 ## Open items
 

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { asWaterMask } from './props.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // Procedural stand-ins for the French side of the story: the ship, the habitation's buildings, and the trade goods.
@@ -502,16 +503,102 @@ export function ship({ length = 24, sails = 'furled' } = {}) {
   return shadowed(root);
 }
 
+// Fittings in the waist shared by the imported vessel and the procedural hull.
+export function deckFittings(importedHull) {
+  const root = new THREE.Group(), timber = [], cordage = [];
+  root.name = 'deck_fittings';
+  function line(points, radius, pieces = points.length * 2) {
+    return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p))), pieces, radius, 5, false);
+  }
+  // A framed hatch grating beside the foremast.
+  for (let i = -3; i <= 3; i++) timber.push(new THREE.BoxGeometry(1.55,.095,.065).translate(-3.7,.09,i*.19));
+  for (let i = -4; i <= 4; i++) timber.push(new THREE.BoxGeometry(.07,.09,1.35).translate(-3.7+i*.18,.06,0));
+  for (const side of [-1,1]) {
+    timber.push(new THREE.BoxGeometry(1.72,.14,.12).translate(-3.7,.08,side*.7));
+    timber.push(new THREE.BoxGeometry(.12,.14,1.4).translate(-3.7+side*.8,.08,0));
+  }
+  // A fall from the yard to the pin rail, with slack flaked down beside it.
+  for (const x of [-1.1,.6]) timber.push(new THREE.BoxGeometry(.14,.85,.14).translate(x,.42,2.35));
+  timber.push(new THREE.BoxGeometry(2.05,.14,.24).translate(-.25,.78,2.35));
+  for (let i=0;i<6;i++) timber.push(new THREE.CylinderGeometry(.042,.034,.34,7).translate(-1+i*.3,.83,2.35));
+  cordage.push(line([[-.12,11.7,3.6],[-.6,5.4,2.75],[-.8,1.1,2.3],[-.8,.78,2.34]],.032));
+  for (const [cx,cz] of [[-.9,1.48],[3.65,-1.4]]) {
+    const pts=[];
+    for(let i=0;i<=90;i++){
+      const a=i*.31, r=.12+i*.0036;
+      pts.push([cx+Math.cos(a)*r,.046,cz+Math.sin(a)*r*.78]);
+    }
+    cordage.push(line(pts,.032,100));
+  }
+  if (importedHull) {
+    // Ratlines span the outer shrouds, tapering to their common mast attachment.
+    for (const [x,h] of [[-6,15],[0,19]]) for (const side of [-1,1]) {
+      for (let y=1.1; y<h*.62; y+=.47) {
+        const f=(y-.45)/(h*.75-.45), half=.825*(1-f), z=side*(3*(1-f)+.13*f);
+        cordage.push(line([[x-half,y,z],[x,y-.035,z],[x+half,y,z]],.02,4));
+      }
+    }
+    // Companion steps lead up the forward face of the raised afterdeck.
+    for(let i=0;i<7;i++) timber.push(new THREE.BoxGeometry(.35,.12,.88).translate(4.47+i*.22,.17+i*.27,.8));
+    for(const side of [-1,1]) timber.push(line([[4.3,.06,.8+side*.46],[6.12,2.05,.8+side*.46]],.075,2));
+    const sternY = x => x<8.8 ? 1.93+(x-6)*.25 : 2.63+(x-8.8)*.0844;
+    const sternZ = x => x<8.8 ? 3.05-(x-6)*.09 : 2.8-(x-8.8)*.17;
+    for(const side of [-1,1]) {
+      const rail=[];
+      for(let x=6.25;x<=11.76;x+=1.1) {
+        const y=sternY(x), z=side*sternZ(x);
+        timber.push(new THREE.BoxGeometry(.095,.86,.095).translate(x,y+.43,z));
+        rail.push([x,y+.84,z]);
+      }
+      timber.push(line(rail,.068,12));
+    }
+  }
+  root.add(new THREE.Mesh(mergeGeometries(timber),mat('#806044')));
+  root.add(new THREE.Mesh(mergeGeometries(cordage),mat('#ad9069')));
+  return shadowed(root);
+}
+
 // A shallop: the open boat the French used to row and sail between ship and shore.
 export function shallop() {
   const root = new THREE.Group();
   root.name = 'shallop';
-  const g = loft(7, 2.1, 0.9, { width: (u) => Math.pow(Math.sin(Math.PI * (u * 0.92 + 0.04)), 0.6), sheer: (u) => 0.2 * Math.pow(1 - 2 * u, 2) });
-  const m = new THREE.Mesh(g, mat('#6b5440', { side: THREE.DoubleSide }));
-  m.position.y = -0.35;
-  root.add(m);
-  for (const x of [-1.5, 0, 1.5]) root.add(new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.06, 1.6).translate(x, 0.35, 0), mat('#8a7050')));
-  return shadowed(root);
+  const width = u => Math.pow(Math.sin(Math.PI * u), .68);
+  const sheer = u => .2 * (1 - 2*u)**2;
+  const g = loft(7, 2.1, .9, { width, sheer }).translate(0, -.35, 0);
+  root.add(new THREE.Mesh(g, mat('#795738', { side: THREE.DoubleSide })));
+  const rims = [], ribs = [], stations = [], indices = [];
+  for (let i = 0; i <= 40; i++) {
+    const u = i / 40, x = (u - .5)*7, z = 1.05*width(u), y = .55 + sheer(u);
+    stations.push(x,y,-z, x,y,z);
+    if (i < 40) indices.push(2*i,2*i+1,2*i+2, 2*i+1,2*i+3,2*i+2);
+    if (i > 2 && i < 38 && i % 4 === 0) {
+      const points = [];
+      for (let j = -5; j <= 5; j++) {
+        const a = j * Math.PI / 10;
+        points.push(new THREE.Vector3(x, -.32 + (.9+sheer(u))*(1-Math.cos(a)), Math.sign(a)*Math.abs(Math.sin(a))**.7*z*.96));
+      }
+      ribs.push(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 12, .036, 5, false));
+    }
+  }
+  for (const side of [0, 3]) {
+    const edge = [];
+    for (let i=side; i<stations.length; i+=6) edge.push(new THREE.Vector3().fromArray(stations,i));
+    rims.push(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(edge), 40, .047, 6, false));
+  }
+  for (const x of [-1.5, 0, 1.5]) {
+    const u = x/7 + .5, seatY = .29;
+    const a = Math.acos(1 - (seatY+.35)/(.9+sheer(u)));
+    const span = 2.1*width(u)*Math.sin(a)**.7 - .065;
+    ribs.push(new THREE.BoxGeometry(.32,.075,span).translate(x,seatY,0));
+  }
+  root.add(new THREE.Mesh(mergeGeometries(rims.concat(ribs)), mat('#b28a5b')));
+  shadowed(root);
+  const cover = new THREE.BufferGeometry().setAttribute('position',new THREE.Float32BufferAttribute(stations,3));
+  cover.setIndex(indices);
+  const mask = asWaterMask(new THREE.Mesh(cover));
+  mask.name = 'water_mask';
+  root.add(mask);
+  return root;
 }
 
 // Boards in a bundle, for the move to Port Royal.

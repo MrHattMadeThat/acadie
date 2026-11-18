@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import * as F from './french.js';
 import { Crowd } from './people.js';
 import { heightAt, HW, season } from './world.js';
@@ -20,7 +21,7 @@ import { CALENDAR } from './content.js';
 
 export const PLACES = {
   ship: [215, -75],
-  shipLoading: [80, -118], // August 1605: brought in close to the landing to load the boards (on the mud at low tide)
+  shipLoading: [104, -120], // August 1605: brought in close to the landing to load the boards (deep enough to float at low tide)
   camp: [1150, -640],      // a Peskotomuhkati summer camp on the east shore (a representative spot, not a known site)
   campBeach: [1128, -600],
   // On the island these follow Champlain's map, fitted to the island's real (mid-tide) outline: south of the
@@ -55,13 +56,13 @@ function plan(px, py) {
 export const VIEWS = {
   title: { eye: [105, 76, 73], look: [-12, 8, -100] },
   opening: { eye: [1900, 230, 3900], look: [300, 0, 600] },
-  trade: { eye: [234, 7.5, -66], look: [219, 1.2, -76] },
+  trade: { eye: [243, 11, -62], look: [217, 2.9, -75] },
   plan: { eye: [214, 15, -58], look: [-25, 14, -116] },
   island: { eye: [72, 46, -40], look: [-27, 8, -122] },
   winter: { eye: [360, 200, 330], look: [-10, 0, -40] },
   sickness: { eye: [8, 22, -24], look: [-27, 13, -56] },
   neighbours: { eye: [-108, 11, -14], look: [-76, 3.5, -42] },
-  leaving: { eye: [110, 80, 100], look: [80, 5, -115] },
+  leaving: { eye: [120, 80, 100], look: [92, 5, -116] },
   acadie: { eye: [900, 1800, 2600], look: [0, 0, 0] },
 };
 
@@ -338,6 +339,17 @@ export async function buildScene(scene, make) {
   ship.position.set(PLACES.ship[0], 0, PLACES.ship[1]);
   ship.rotation.y = -1.9; // bow upriver, to the north-north-west
   root.add(ship);
+  const fittings = F.deckFittings(ship.userData.source === 'glb');
+  fittings.position.y = ship.userData.deckY + (ship.userData.source === 'glb' ? 0 : .075);
+  ship.add(fittings);
+  const cargoStacks = new THREE.Group();
+  for (const [x,z] of [[-6.75,-1.05],[-7.35,-1.02],[-1.5,-1.08]]) {
+    const crate = new THREE.Mesh(new THREE.BoxGeometry(.56,.41,.48), new THREE.MeshStandardMaterial({color: '#9a7a55'}));
+    crate.position.set(x,.205,z);
+    crate.castShadow = crate.receiveShadow = true;
+    cargoStacks.add(crate);
+  }
+  fittings.add(cargoStacks);
   const deck = new THREE.Group(); // on deck, at the waist on the side facing the camera
   deck.position.set(1.2, ship.userData.deckY + 0.1, -2.2);
   ship.add(deck);
@@ -352,12 +364,34 @@ export async function buildScene(scene, make) {
   const tradeCanoe = await make('canoe_birch');
   tradeCanoe.name = 'trade_canoe';
   const peltPile = F.pelts();
-  peltPile.scale.setScalar(1.3);
-  peltPile.position.set(0, 0.25, 0);
+  tradeCanoe.scale.setScalar(1.28);
+  peltPile.scale.set(.82,.64,.56);
+  peltPile.position.set(.48, .095, 0);
   tradeCanoe.add(peltPile);
   root.add(tradeCanoe);
   const shallop = F.shallop();
   root.add(shallop);
+  // a pair of oars for each rower, pivoting on the gunwales; they sweep with the rower's stroke (see update)
+  const oars = [];
+  {
+    const wood = new THREE.MeshStandardMaterial({ color: '#9a7a52', roughness: 0.9 });
+    const oarGeo = mergeGeometries([
+      new THREE.CylinderGeometry(0.035, 0.035, 3.6, 6).rotateX(Math.PI / 2).translate(0, 0, 0.9),
+      new THREE.BoxGeometry(0.04, 0.2, 0.75).translate(0, 0, 2.95),
+    ]);
+    for (const x of [-1.5, 0, 1.5]) for (const side of [-1, 1]) {
+      const pivot = new THREE.Group();
+      pivot.position.set(x + 0.45, 0.62, side * 1.0);
+      pivot.rotation.order = 'YXZ';
+      const oar = new THREE.Mesh(oarGeo, wood);
+      if (side < 0) oar.rotation.y = Math.PI;
+      oar.castShadow = true;
+      pivot.add(oar);
+      pivot.userData = { x, side };
+      shallop.add(pivot);
+      oars.push(pivot);
+    }
+  }
 
   // ---------------------------------------------------------------- a Peskotomuhkati summer camp, and the March canoes
 
@@ -380,8 +414,8 @@ export async function buildScene(scene, make) {
     place(c, PLACES.marchBeach[0] + x, PLACES.marchBeach[1] + z, r, march);
     // bundles of fresh meat, wrapped in hide
     for (let k = 0; k < 3; k++) {
-      const b = new THREE.Mesh(new THREE.SphereGeometry(0.32, 8, 6).scale(1.3, 0.7, 1), new THREE.MeshStandardMaterial({ color: '#7a5a3e', roughness: 1 }));
-      b.position.set((k - 1) * 0.9, 0.3, 0);
+      const b = new THREE.Mesh(new THREE.SphereGeometry(.25, 10, 8).scale(1.18, .6, .76), new THREE.MeshStandardMaterial({ color: '#7a5a3e', roughness: 1 }));
+      b.position.set(-.48 + k * .94, .215, 0);
       b.castShadow = true;
       c.add(b);
     }
@@ -474,8 +508,18 @@ export async function buildScene(scene, make) {
       when: (st) => onIsland(st) && st.month >= 4 && st.month <= 10 && (i < 2 || st.month < 7.5 || st.month > 9.5) });
   }
   // the trade: Peskotomuhkati traders in the canoe beside the ship, French traders at the rail
-  const paddlers = [-1.3, 1.3].map((dx) => peskotomuhkati({ x: 0, z: 0, heading: 0, action: 'paddle', tool: 'paddle', when: (st) => st.stop === 'trade' || st.stop === 'plan', canoe: dx }));
-  const deckHands = [[0.5, -2.6, 'reach'], [-1.5, -2.4, 'idle'], [3.5, -1.5, 'chat'], [-6, 0, 'idle'], [6, 0.5, 'idle']].map(([dx, dz, action]) => french({ x: 0, z: 0, heading: 0, action, deck: [dx, dz], when: (st) => ['trade', 'plan', 'island'].includes(st.stop) && st.month < 1.5 }));
+  const paddlers = [-1.3, 1.3].map((dx) => peskotomuhkati({ x: 0, z: 0, heading: 0, action: 'paddle', tool: 'paddle', when: (st) => st.stop === 'trade' || st.stop === 'plan', canoe: dx, scale: .86, y: f => f.deckHeight }));
+  const deckHands = [];
+  function sailor(x, z, facing, action, options = {}) {
+    deckHands.push(french({ x: 0, z: 0, heading: 0, hat: 'monmouth', action,
+      deck: [x, z], facing, y: f => f.deckHeight, when: () => ship.visible, ...options }));
+  }
+  sailor(.9, -1.45, Math.PI, 'chat');
+  sailor(-.8, 1.94, 0, 'haul');
+  sailor(-6.65, .45, 2.2, 'reach');
+  sailor(0, -1.02, 0, 'carry', { route: [-6.1,-2.1], tool: 'crate', cargo: true, cycle: 15 });
+  sailor(0, .28, 0, 'walk', { route: [.72,3.95], cycle: 12 });
+  sailor(9.5, -.7, 2.75, 'idle', { upperDeck: true });
   // the summer camp: families at their camp
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2, r = 4 + rand() * 4;
@@ -489,7 +533,7 @@ export async function buildScene(scene, make) {
   // leaving: men carry the boards down to the landing; the shallop takes them out to the ship
   const toBoats = [at(700, 480), at(900, 600, 4, 0), [PLACES.landing[0] - 18, PLACES.landing[1] - 6], PLACES.landing];
   for (let i = 0; i < 8; i++) french({ x: toBoats[0][0], z: toBoats[0][1], heading: 0, action: 'shoulder', tool: 'plank', path: toBoats, speed: 1.2, offset: i / 8, when: (st) => st.stop === 'leaving' });
-  const rowers = [-1.5, 0, 1.5].map((dx) => french({ x: 0, z: 0, heading: 0, action: 'row', hat: 'monmouth', when: (st) => st.stop === 'leaving', boat: dx }));
+  const rowers = [-1.5, 0, 1.5].map((dx) => french({ x: 0, z: 0, heading: 0, action: 'row', hat: 'monmouth', when: (st) => st.stop === 'leaving', boat: dx, y: f => f.deckHeight }));
 
   // walk a path back and forth: f.path, f.speed (m/s), f.offset (0..1 of the way round)
   function walk(f, t) {
@@ -556,6 +600,13 @@ export async function buildScene(scene, make) {
 
   // the ship and the boats beside it
   const tmpV = new THREE.Vector3();
+  function ride(f, boat, x, y, z, facing) {
+    boat.localToWorld(tmpV.set(x, y, z));
+    f.x = tmpV.x;
+    f.z = tmpV.z;
+    f.deckHeight = tmpV.y;
+    f.heading = boat.rotation.y + facing;
+  }
   function placeBoats() {
     tmpV.set(1.5, 0, -6.4).applyEuler(ship.rotation).add(ship.position);
     tradeCanoe.position.set(tmpV.x, 0, tmpV.z);
@@ -636,7 +687,7 @@ export async function buildScene(scene, make) {
       ship.position.y = Math.max(tide + Math.sin(t * 0.6) * 0.08, shipBed()); // at low tide she sits on the mud
       ship.rotation.z = Math.sin(t * 0.5) * 0.012;
       ship.userData.flag.rotation.y = Math.sin(t * 1.3) * 0.25;
-      tradeCanoe.position.y = tide + Math.sin(t * 0.9 + 1) * 0.05;
+      tradeCanoe.position.y = Math.max(heightAt(tradeCanoe.position.x, tradeCanoe.position.z), tide - .14) + Math.sin(t * 0.9 + 1) * 0.05;
       // on the last stop the shallop shuttles between the landing and the ship
       if (st.stop === 'leaving') {
         const k = 0.5 - 0.5 * Math.cos(t * 0.12);
@@ -648,9 +699,33 @@ export async function buildScene(scene, make) {
       for (const s of smokes) s(dt);
       stepDismantle(dt);
       // people riding boats: their place follows the boat
-      paddlers.forEach((f, i) => { tmpV.set([-1.3, 1.3][i], 0.1, 0).applyEuler(tradeCanoe.rotation).add(tradeCanoe.position); f.x = tmpV.x; f.z = tmpV.z; f.heading = tradeCanoe.rotation.y - Math.PI / 2; f.y = () => tradeCanoe.position.y + 0.15; });
-      deckHands.forEach((f) => { tmpV.set(f.deck[0], ship.userData.deckY + 0.05, f.deck[1]).applyEuler(ship.rotation).add(ship.position); f.x = tmpV.x; f.z = tmpV.z; f.heading = ship.rotation.y + Math.PI; const y = tmpV.y; f.y = () => y; });
-      rowers.forEach((f) => { tmpV.set(f.boat, 0.3, 0).applyEuler(shallop.rotation).add(shallop.position); f.x = tmpV.x; f.z = tmpV.z; f.heading = shallop.rotation.y - Math.PI / 2; const y = tmpV.y; f.y = () => y; });
+      for (const f of paddlers) ride(f, tradeCanoe, f.canoe, .085, 0, -Math.PI/2);
+      for (const f of rowers) ride(f, shallop, f.boat, .20, 0, -Math.PI/2);
+      // the oars follow their rower's stroke (the same sine as ACTIONS.row in people.js)
+      for (const o of oars) {
+        const f = rowers[[-1.5, 0, 1.5].indexOf(o.userData.x)];
+        const s = Math.sin(Math.PI * (t + f.phase) + f.seed);
+        o.rotation.y = o.userData.side * 0.45 * s;
+        o.rotation.x = o.userData.side * (0.2 + 0.1 * Math.cos(Math.PI * (t + f.phase) + f.seed));
+      }
+      for (const f of deckHands) {
+        if (f.hidden) continue;
+        let [x,z] = f.deck, facing = f.facing;
+        if (f.route) {
+          const phase = ((t + f.phase) % f.cycle) / f.cycle;
+          const outbound = phase < .5;
+          const leg = (phase % .5)*2;
+          const progress = THREE.MathUtils.clamp((leg-.13)/.74,0,1);
+          x = THREE.MathUtils.lerp(...f.route, outbound ? progress : 1-progress);
+          facing = (outbound ? 1 : -1)*Math.PI/2;
+          if (f.cargo) {
+            crowd.setTool(f,outbound ? 'crate' : null);
+            f.action = outbound ? 'carry' : 'walk';
+          }
+        }
+        const y = f.upperDeck ? (ship.userData.source === 'glb' ? 3.89 : 3.975) : fittings.position.y;
+        ride(f,ship,x,y,z,facing);
+      }
       for (const f of crowd.list) if (f.path && !f.hidden) walk(f, t);
       if (camera) crowd.update(dt, t, { camera, groundY: ground, range: 900 });
     },
