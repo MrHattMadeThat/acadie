@@ -51,6 +51,13 @@ own. Started 2026-11-18. Read `README.md` for the file map and `docs/SOURCES.md`
 - The habitation is laid out letter by letter from Champlain's plan (`H` table in scene.js, plan pixels through
   `plan()`), with its top to the west. The island and mainland sites come from his island map via
   `scripts/champlain-fit.mjs`. See docs/SOURCES.md for every judgment call.
+- **The island's shape (round 3):** `data/island-trace.png` (mid-tide shore traced from air photos, 1 m a pixel,
+  origin -160,-250) plus OSM's island outline (= low water) make the island in `build-terrain.mjs` ("St. Croix
+  Island, at 1 m"). High tide cuts off both islets, half tide bares the spit and the rock ledge, low tide joins it
+  all. `public/data/inset-kind.bin` marks sand and rock for the ground colours. The habitation's centre (PLAN.at,
+  -25,-118) is repeated in main.js (MAP_VIEWS.plan) and world.js (the worn square): change all three together.
+- Vite's dev server can serve a stale `meta.json` next to a new `inset.bin` after `npm run build:data`, which
+  stretches the island. Reload with the cache bypassed.
 - **Champlain's maps (1613)** button: a card with both maps; while one is open, his letters show on the 3D scene
   (`story.setLetters`) and the camera glides to look down with west at the top, the way he drew them.
 - People: `src/people.js` is copied from st-george-3d (instanced, posed in code), with felt hats, knitted caps, long hair

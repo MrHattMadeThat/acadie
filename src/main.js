@@ -464,8 +464,8 @@ let mapShown = null;
 // While a map is open the camera looks down on the island turned the way Champlain drew it: west at the top. On his
 // island map his north is about 27 degrees off true north (scripts/champlain-fit.mjs), so that view turns with it.
 const MAP_VIEWS = {
-  map: { look: [10, 0, -20], up: [-0.889, -0.459], dist: 520, height: 740 },
-  plan: { look: [-18, 9, -130], up: [-0.974, 0.226], dist: 40, height: 175 },
+  map: { look: [5, 0, -40], up: [-0.889, -0.459], dist: 400, height: 560 },
+  plan: { look: [-25, 9, -118], up: [-0.974, 0.226], dist: 40, height: 175 },
 };
 let mapReturn = null, glide = null;
 function glideTo(eye, look) {

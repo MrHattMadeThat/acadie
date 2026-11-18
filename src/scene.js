@@ -20,26 +20,29 @@ import { CALENDAR } from './content.js';
 
 export const PLACES = {
   ship: [215, -75],
-  shipLoading: [155, -112], // August 1605: brought in close to the landing to load the boards
+  shipLoading: [80, -118], // August 1605: brought in close to the landing to load the boards (on the mud at low tide)
   camp: [1150, -640],      // a Peskotomuhkati summer camp on the east shore (a representative spot, not a known site)
   campBeach: [1128, -600],
-  marchBeach: [-90, -42],  // where the canoes come ashore on the island in March 1605
-  landing: [52, -114],     // the beach below the habitation, on the channel side
-  islandGardens: [25, -82], // B
-  cemetery: [-4, -46],     // E (the fit puts it at about [-8, -66]; drawn a little closer to the chapel so both fit one view)
-  chapel: [2, -26],        // F
-  batterySouth: [48, 140], // C, on the islet
-  batteryNorth: [-32, -208], // D
+  // On the island these follow Champlain's map, fitted to the island's real (mid-tide) outline: south of the
+  // habitation the cemetery (E) toward the west shore, the gardens (B) toward the east, the chapel (F) south of both.
+  marchBeach: [-76, -42],  // where the canoes come ashore on the island in March 1605
+  landing: [30, -110],     // the beach below the habitation, on the channel side
+  islandGardens: [12, -60], // B
+  cemetery: [-30, -62],    // E
+  chapel: [-25, -36],      // F
+  batterySouth: [-14, 105], // C, on the little islet the sand spit runs to (cut off at high tide)
+  batteryNorth: [-6, -184], // D, at the north end
   mill: [-955, 490],       // I, at the mouth of Beaver Brook
   charcoal: [-965, 70],    // L
   gardensWest: [-880, -10], // M
   gardensEast: [1345, -100], // N
-  flake: [58, -60],
+  flake: [30, -40],
 };
 
 // The plan of the habitation: plan pixels (the 1308 px scan) to world metres. The plan's right is north along the
-// island, its bottom is east. 0.1 m a pixel makes the compound about 65 m by 78 m.
-const PLAN = { cx: 632, cy: 500, scale: 0.1, at: [-18, -130] };
+// island, its bottom is east. 0.1 m a pixel makes the compound about 65 m by 78 m. It sits where the island is wide
+// enough for it, just south of the narrow north end (the north end itself is only 30-60 m across).
+const PLAN = { cx: 632, cy: 500, scale: 0.1, at: [-25, -118] };
 const NORTH = new THREE.Vector2(-0.226, -0.974).normalize();
 const EAST = new THREE.Vector2(-NORTH.y, NORTH.x); // (0.974, -0.226)
 const PLAN_ROT = Math.atan2(-NORTH.y, NORTH.x); // turns a model's +x to north and its +z (its front) to east
@@ -53,11 +56,11 @@ export const VIEWS = {
   title: { eye: [105, 76, 73], look: [-12, 8, -100] },
   opening: { eye: [1900, 230, 3900], look: [300, 0, 600] },
   trade: { eye: [234, 7.5, -66], look: [219, 1.2, -76] },
-  plan: { eye: [214, 15, -58], look: [-18, 14, -128] },
-  island: { eye: [72, 46, -52], look: [-20, 8, -134] },
+  plan: { eye: [214, 15, -58], look: [-25, 14, -116] },
+  island: { eye: [72, 46, -40], look: [-27, 8, -122] },
   winter: { eye: [360, 200, 330], look: [-10, 0, -40] },
-  sickness: { eye: [30, 15, -6], look: [-4, 9, -40] },
-  neighbours: { eye: [-116, 11, -14], look: [-88, 4.5, -42] },
+  sickness: { eye: [8, 22, -24], look: [-27, 13, -56] },
+  neighbours: { eye: [-108, 11, -14], look: [-76, 3.5, -42] },
   leaving: { eye: [110, 80, 100], look: [80, 5, -115] },
   acadie: { eye: [900, 1800, 2600], look: [0, 0, 0] },
 };
@@ -181,7 +184,9 @@ export async function buildScene(scene, make) {
     ['T', 'lodging_t', 748, 752, () => F.rowHouse({ units: 3, unitW: 4.4, d: 6, name: 'lodging_t', chimneys: [0, 2] }), [13.2, 6], 0, 'Beaumont, la Motte and Fougeray'],
     ['V', 'cure', 572, 770, () => F.hall({ w: 11, d: 6, h: 3, name: 'cure' }), [11, 6], 0, 'our priest'],
     ['H', 'bakehouse', 880, 838, () => F.bakehouse(), [7, 5], 0, 'the bake oven'],
-    ['I', 'kitchen', 1128, 205, () => F.hall({ w: 6, d: 5, h: 2.8, name: 'kitchen', chimneyAt: 0.25 }), [6, 5], Math.PI / 2, 'the kitchen'],
+    // I: Champlain draws the kitchen on the bank by the water, north-west of the houses. The real north end is
+    // narrower than his, so it stands a little nearer the houses (plan 1020, 350 rather than 1128, 205), on the bank.
+    ['I', 'kitchen', 1020, 350, () => F.hall({ w: 6, d: 5, h: 2.8, name: 'kitchen', chimneyAt: 0.25 }), [6, 5], Math.PI / 2, 'the kitchen'],
   ];
   for (const [letter, name, px, py, makeIt, [w, d], turn, what] of H) {
     const b = makeIt();
@@ -290,7 +295,8 @@ export async function buildScene(scene, make) {
   {
     const geo = F.boulderGeometry();
     const spots = [];
-    const zones = [[30, 120, 70, 40], [110, -230, 90, 70], [-40, -235, 40, 25], [-95, -60, 25, 90], [75, -20, 25, 110]];
+    // (the ledge south-east of the island, bare at half tide, is the biggest of them)
+    const zones = [[0, 110, 60, 40], [112, 72, 28, 38], [110, -230, 90, 70], [-30, -225, 40, 25], [-90, -60, 25, 90], [65, -20, 25, 110]];
     for (const [zx, zz, rx, rz] of zones) for (let i = 0; i < 70; i++) {
       const x = zx + (rand() * 2 - 1) * rx, z = zz + (rand() * 2 - 1) * rz, h = heightAt(x, z);
       if (h > -HW() + 0.3 && h < HW() - 0.2) spots.push([x, h, z, 0.3 + rand() ** 2 * 1.4]);
@@ -313,9 +319,9 @@ export async function buildScene(scene, make) {
 
   // the letters of the island map, for the map viewer
   for (const [L, at, text, up] of [
-    ['A', [-18, -130], 'the habitation', 16], ['B', PLACES.islandGardens, 'gardens', 5], ['C', PLACES.batterySouth, 'a little islet with the cannon', 6],
+    ['A', PLAN.at, 'the habitation', 16], ['B', PLACES.islandGardens, 'gardens', 5], ['C', PLACES.batterySouth, 'a little islet with the cannon', 6],
     ['D', PLACES.batteryNorth, 'a platform with cannon', 6], ['E', PLACES.cemetery, 'the cemetery', 5], ['F', PLACES.chapel, 'the chapel', 9],
-    ['G', [30, 120], 'rocky shoals', 3], ['H', [47, 1610], 'a small islet (Little Dochet)', 8], ['I', PLACES.mill, 'the water mill de Mons began', 8],
+    ['G', [110, 70], 'rocky shoals', 3], ['H', [47, 1610], 'a small islet (Little Dochet)', 8], ['I', PLACES.mill, 'the water mill de Mons began', 8],
     ['L', PLACES.charcoal, 'where they made charcoal', 6], ['M', PLACES.gardensWest, 'gardens on the west shore', 5], ['N', PLACES.gardensEast, 'gardens on the east shore', 5],
     ['P', [420, 380], 'Rivière des Etechemins', 0],
   ]) {

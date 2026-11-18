@@ -35,12 +35,13 @@ export function season(key, m) {
 
 // ------------------------------------------------------------------ data
 
-let meta, mainH, insetH;
+let meta, mainH, insetH, insetKind;
 export async function loadWorldData() {
   const get = async (f) => (await fetch(`data/${f}`)).arrayBuffer();
   meta = await (await fetch('data/meta.json')).json();
   mainH = new Float32Array(await get('height.bin'));
   insetH = new Float32Array(await get('inset.bin'));
+  insetKind = new Uint8Array(await get('inset-kind.bin')); // 0 by height, 1 sand, 2 rock (the island's shore)
   const trees = new Float32Array(await get('trees.bin'));
   return { meta, trees };
 }
@@ -150,7 +151,7 @@ export function buildWorld(scene, { trees, low = false }) {
             // Fine meadow mottling, tidal gravel and a trodden central square.
             float grain = gn(vWPos.xz * 2.2);
             diffuseColor.rgb *= 0.86 + 0.24 * n + 0.10 * grain;
-            vec2 delta = vWPos.xz - vec2(-18., -130.);
+            vec2 delta = vWPos.xz - vec2(-25., -118.); // the habitation's square (PLAN.at in scene.js)
             vec2 court = vec2(dot(delta, vec2(-.226,-.974)), dot(delta,vec2(.974,-.226)));
             float yard = max(abs(court.x - 2.) - 8.2, abs(court.y + 1.) - 18.);
             float lane = max(abs(court.x - 1.) - 1.4, abs(court.y - 19.) - 14.);
@@ -176,10 +177,13 @@ export function buildWorld(scene, { trees, low = false }) {
   const C = {
     bed: new THREE.Color('#4a5648'), mud: new THREE.Color('#8a7c63'), weed: new THREE.Color('#6a5d36'),
     gravel: new THREE.Color('#948d7d'), grass: new THREE.Color('#7f9450'), forest: new THREE.Color('#4a5a33'), rock: new THREE.Color('#7d776b'),
+    sand: new THREE.Color('#c2b08a'), wetSand: new THREE.Color('#9c8c6c'), shoreRock: new THREE.Color('#7a6e5e'),
   };
   const c = new THREE.Color();
-  function colourAt(x, z, h, slope, shade) {
-    if (h < -H) c.copy(C.bed);
+  function colourAt(x, z, h, slope, shade, kind = 0) {
+    if (kind === 1 && h > -H) c.copy(C.wetSand).lerp(C.sand, smooth(0.2, 2.4, h)); // the spit and its beaches
+    else if (kind === 2 && h > -H && h < H + 1.5) c.copy(C.shoreRock).lerp(C.weed, (1 - smooth(-1, 1.6, h)) * 0.7); // rock, weedy low down
+    else if (h < -H) c.copy(C.bed);
     else if (h < H - 1.2) c.copy(C.mud).lerp(C.bed, smooth(-H * 0.4, -H, h) * 0.6);
     else if (h < H) c.copy(C.weed);
     else if (h < H + 1.3) c.copy(C.gravel);
@@ -191,14 +195,14 @@ export function buildWorld(scene, { trees, low = false }) {
     return c.multiplyScalar(n);
   }
 
-  function gridMesh(g, arr, keep, offset, shadeAt) {
+  function gridMesh(g, arr, keep, offset, shadeAt, kinds) {
     const pos = new Float32Array(g.w * g.h * 3), col = new Float32Array(g.w * g.h * 3);
     for (let j = 0; j < g.h; j++) for (let i = 0; i < g.w; i++) {
       const k = j * g.w + i, x = g.x0 + i * g.cell, z = g.z0 + j * g.cell, h = arr[k];
       pos.set([x, h, z], k * 3);
       const hx = arr[k + (i < g.w - 1 ? 1 : 0)] - arr[k - (i > 0 ? 1 : 0)], hz = arr[k + (j < g.h - 1 ? g.w : 0)] - arr[k - (j > 0 ? g.w : 0)];
       const slope = Math.hypot(hx, hz) / (2 * g.cell);
-      colourAt(x, z, h, slope, shadeAt(x, z, k));
+      colourAt(x, z, h, slope, shadeAt(x, z, k), kinds ? kinds[k] : 0);
       col.set([c.r, c.g, c.b], k * 3);
     }
     const idx = [];
@@ -218,7 +222,7 @@ export function buildWorld(scene, { trees, low = false }) {
   }
   const M = meta.main, I = meta.inset;
   world.add(gridMesh(M, mainH, (x, z) => !(inInset(x, z, -1) && inInset(x + M.cell, z + M.cell, -1)), false, (x, z, k) => forestShade[k]));
-  world.add(gridMesh(I, insetH, () => true, true, (x, z) => (onIsland(x, z) ? 0.05 : 0.6)));
+  world.add(gridMesh(I, insetH, () => true, true, (x, z) => (onIsland(x, z) ? 0.05 : 0.6), insetKind));
 
   // ---------------------------------------------------------------- water and the tide
 

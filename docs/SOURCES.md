@@ -40,17 +40,33 @@ the class's A–F / 1–4 grid drawn on it; the plan of the habitation is a scan
 
 How they were used:
 
+- **The island's shape** (2026-11-18, round 3) comes from two outlines, checked against Champlain's map and the
+  teacher's photos of the island at mid and low tide (an aerial photo shows the same at another angle):
+  - the mid-tide shore, traced from air photos (Esri World Imagery; Esri allows tracing from it) into
+    `data/island-trace.png`, 1 m a pixel: the long narrow island, the sand spit at the south end, and the two little
+    islets the spit runs toward;
+  - OSM's coastline for the island, which is drawn at about low water: it takes in the rock aprons and the rock
+    ledge south-east of the island.
+  From the teacher: at high tide you cannot walk to the two little islets; at low tide you can walk out to the big
+  rock ledge. The ground is set so the game's tide does the same (spit crest +1.5 m, ledge top about +1.9 m, low-water
+  line -1.9 m; the water runs ±2.2 m). The island's height (about 13 m on top) follows the elevation tiles.
 - **The island map** has north to the right (the fleur-de-lis on its compass) and west at the top. Fitted onto the
-  real outline from two points (the north tip and the south end of the main body), its own scale bar agrees: 0.68 m
-  a pixel by the fit, about 0.64 m by his toise bar. His north is turned about 27 degrees from true north.
+  mid-tide outline from two points (the north tip and the south end of the main body), his island is about 40%
+  bigger than his own toise bar says (0.46 m a pixel by the fit, 0.64 m by the bar). Fitted onto the low-water
+  outline the two agreed (0.68). So he may have drawn the island at low water, or the island may have lost ground
+  since; we don't know which. His north is turned about 30 degrees from true north.
 - His river is drawn far narrower than it is, so the mainland sites (I, L, M, N) are placed on the real shores in the
   directions he shows. The water mill (I) sits at the mouth of Beaver Brook, the stream on that shore.
-- **C, the cannon islet:** OSM joins the island's southern tail to the island; following Champlain, the neck is
-  lowered below high water so the tail stands apart (`scripts/build-terrain.mjs`).
+- **C, the cannon islet:** his C sits on the sand running south to a line of rocks. It is placed on the little islet
+  the sand spit runs to (the south-west one), which is cut off at high tide.
+- **The habitation's place:** the real north end is only 30-60 m across, narrower than Champlain draws it, so the
+  compound (about 65 by 78 m at 0.1 m a plan pixel) sits just south of it, where the island is about 110 m wide.
+  The kitchen (I), which he draws on the bank by the water, comes a little nearer the houses to stay on the bank.
+  The cemetery (E), gardens (B) and chapel (F) follow his map south of the houses: E toward the west shore, B toward
+  the east, F south of both.
 - **H, Little Dochet Island:** OSM has only its name, so it is raised from the elevation tiles.
 - **The plan's orientation** is not stated. It is drawn with its top to the west, like the island map: then its
   gardens fall on the south side as the island map shows (B), and its kitchen (I) sits on the bank.
-- **The cemetery (E)** is drawn about 20 m nearer the chapel than the fit puts it, so both fit one view.
 - **The well (G):** the plan shows one. The reading says the fresh water was on the shores, so no answer says there
   was no water on the island; the well is a good discussion point.
 

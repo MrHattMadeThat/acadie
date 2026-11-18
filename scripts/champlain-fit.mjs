@@ -1,7 +1,11 @@
 // Fits Champlain's 1613 map of St. Croix Island (the class copy with the A-F / 1-4 grid, 2000 px wide) onto the
 // real island, and prints where each of his lettered features lands in local metres. Run: node scripts/champlain-fit.mjs
 // His north is the fleur-de-lis on the compass, pointing right; west is up. A similarity transform (turn, scale, shift)
-// from two control points: the south end of the island's main body and its north tip.
+// from two control points: the south end of the island's main body and its north tip, on the island's mid-tide
+// outline (data/island-trace.png, traced from air photos). Against that outline his island comes out about 40%
+// bigger than his own scale bar; against OSM's low-water outline (the first fit) the two agreed. He may have drawn it
+// at low water, rocks and flats included.
+// The places in src/scene.js were set from this fit, then nudged to fit the habitation where the island is wide enough.
 const C = (re, im) => ({ re, im });
 const sub = (a, b) => C(a.re - b.re, a.im - b.im), add = (a, b) => C(a.re + b.re, a.im + b.im);
 const mul = (a, b) => C(a.re * b.re - a.im * b.im, a.re * b.im + a.im * b.re);
@@ -9,8 +13,8 @@ const div = (a, b) => { const d = b.re * b.re + b.im * b.im; return C((a.re * b.
 // image (x right, y down) -> local (x east, z south): x = iy, z = -ix, before fitting
 const pre = ([ix, iy]) => C(iy, -ix);
 const ctrl = [
-  [[870, 760], [48, 128]],   // south end of the main body (above the long southern shoal)
-  [[1290, 400], [-38, -236]], // north tip
+  [[870, 760], [0, 45]],     // south end of the main body, where the sand spit starts
+  [[1290, 400], [-22, -208]], // north tip
 ];
 const p0 = pre(ctrl[0][0]), p1 = pre(ctrl[1][0]), q0 = C(...ctrl[0][1]), q1 = C(...ctrl[1][1]);
 const A = div(sub(q1, q0), sub(p1, p0)), B = sub(q0, mul(A, p0));
