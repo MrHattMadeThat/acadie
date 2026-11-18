@@ -83,13 +83,13 @@ export function house({ w = 8, d = 5, h = 2.6, roof = 0.85, chimney = true, name
   root.add(new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.8, 0.08).translate(-w * 0.15, 0.9, d / 2 + 0.02), dark));
   for (const x of [w * 0.15, w * 0.35]) root.add(new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.6, 0.08).translate(x, h * 0.6, d / 2 + 0.02), dark));
   if (chimney) {
-    const ch = new THREE.Mesh(new THREE.BoxGeometry(0.8, rh + 1.4, 0.8).translate(w / 2 - 1, h + (rh + 1.4) / 2 - 0.4, 0), mat('#8a8178'));
+    const ch = new THREE.Mesh(new THREE.BoxGeometry(0.8, rh + 1.4, 0.8).translate(w / 2 - 1, h + (rh + 1.4) / 2 - 0.4, 0), masonry());
     ch.name = `${name}_chimney`;
     root.add(ch);
     root.userData.chimneyTop = [w / 2 - 1, h + rh + 1.1, 0];
   }
   // stone footing that stays when the building is taken down
-  const foot = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.35, d + 0.3).translate(0, 0.05, 0), mat('#8c877e'));
+  const foot = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.35, d + 0.3).translate(0, 0.05, 0), masonry());
   foot.name = `${name}_footing`;
   foot.userData.stays = true;
   root.add(foot);
@@ -142,27 +142,97 @@ export function palisade(points, height = 2.6, groundAt = () => 0) {
   return shadowed(m);
 }
 
-// Garden beds: dark rows with green that grows with `growth` (0 bare earth, 1 full).
-export function garden(w = 14, d = 10, rows = 7) {
+// Soil, woven hurdles and planting all use the same local terrain sampler.
+export function garden(w, d, rows, ground, formal = false) {
   const root = new THREE.Group();
   root.name = 'garden';
-  root.add(new THREE.Mesh(new THREE.BoxGeometry(w, 0.12, d).translate(0, 0.02, 0), mat('#5d4532')));
-  const green = mat('#5e8a3a');
-  const plants = [];
-  for (let r = 0; r < rows; r++) {
-    const bed = new THREE.Mesh(new THREE.BoxGeometry(w - 1, 0.25, d / rows * 0.55).translate(0, 0.18, -d / 2 + (r + 0.5) * (d / rows)), mat('#6b4f38'));
-    root.add(bed);
-    const pl = new THREE.Mesh(new THREE.BoxGeometry(w - 1.4, 0.35, d / rows * 0.4).translate(0, 0.4, -d / 2 + (r + 0.5) * (d / rows)), green);
-    plants.push(pl);
-    root.add(pl);
+  function surface(x, z, width, depth, lift, ridge = 0) {
+    const g = new THREE.PlaneGeometry(width, depth, Math.ceil(width / 0.5), Math.max(4, Math.ceil(depth / 0.5))).rotateX(-Math.PI / 2);
+    const pos = g.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const offset = pos.getZ(i);
+      const px = x + pos.getX(i), pz = z + offset;
+      pos.setXYZ(i, px, ground(px, pz) + lift + ridge * Math.cos(Math.PI * offset / depth), pz);
+    }
+    g.computeVertexNormals();
+    return g;
   }
-  root.userData.grow = (g) => plants.forEach((p) => { p.visible = g > 0.05; p.scale.set(1, Math.max(0.05, g), 1); });
-  // a low wattle fence
-  const fence = [];
-  for (const [x, z, L, rot] of [[0, -d / 2, w, 0], [0, d / 2, w, 0], [-w / 2, 0, d, Math.PI / 2], [w / 2, 0, d, Math.PI / 2]]) {
-    fence.push(new THREE.BoxGeometry(L, 0.7, 0.08).translate(0, 0.35, 0).rotateY(rot).translate(x, 0, z));
+  root.add(new THREE.Mesh(surface(0, 0, w, d, 0.075), mat(formal ? '#b19b76' : '#836543')));
+  const beds = [], foliage = [], colors = [], mature = [];
+  function plant(x, z, y) {
+    const size = 0.17 + 0.12 * rnd(), angle = rnd() * Math.PI;
+    const tint = new THREE.Color().setHSL(0.19 + rnd() * 0.055, 0.31, 0.29 + rnd() * 0.14);
+    for (let k = 0; k < 4; k++) {
+      const a = angle + k * Math.PI / 2, dx = Math.cos(a), dz = Math.sin(a);
+      const leaf = [[0, 0, 0], [dx * .55 - dz * .32, .9, dz * .55 + dx * .32],
+        [dx, 1.15, dz], [dx * .55 + dz * .32, .9, dz * .55 - dx * .32]];
+      for (const j of [0, 1, 2, 0, 2, 3]) {
+        const [lx, ly, lz] = leaf[j];
+        foliage.push(x + lx * size * .3, y + ly * size * .2, z + lz * size * .3);
+        mature.push(x + lx * size, y + ly * size, z + lz * size);
+        colors.push(tint.r, tint.g, tint.b);
+      }
+    }
   }
-  root.add(new THREE.Mesh(mergeGeometries(fence), mat('#8a7354')));
+  if (formal) {
+    const bw = w / 2 - 0.85, bd = d / 2 - 0.85;
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      const cx = sx * w / 4, cz = sz * d / 4;
+      beds.push(surface(cx, cz, bw, bd, .16));
+      // Dotted diagonals and borders echo the motifs in the engraved beds.
+      for (let x = -.44; x <= .45; x += .4 / bw) for (let z = -.44; z <= .45; z += .4 / bd) {
+        if (Math.abs(Math.abs(x) - Math.abs(z)) > .045 && Math.max(Math.abs(x), Math.abs(z)) < .39) continue;
+        const px = cx + x * bw, pz = cz + z * bd;
+        plant(px, pz, ground(px, pz) + .17);
+      }
+    }
+  } else {
+    const pitch = (d - .8) / rows;
+    for (let r = 0; r < rows; r++) {
+      const z = -d / 2 + .4 + (r + .5) * pitch;
+      beds.push(surface(0, z, w - .9, pitch * .68, .09, .15));
+      for (let x = -w / 2 + .7; x < w / 2 - .5; x += .45) plant(x, z, ground(x, z) + .24);
+    }
+  }
+  root.add(new THREE.Mesh(mergeGeometries(beds), mat('#64462f')));
+  const crops = new THREE.BufferGeometry();
+  crops.setAttribute('position', new THREE.Float32BufferAttribute(foliage, 3));
+  crops.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  crops.morphAttributes.position = [new THREE.Float32BufferAttribute(mature, 3)];
+  crops.computeVertexNormals();
+  const leaves = new THREE.Mesh(crops, mat('#ffffff', { vertexColors: true, side: THREE.DoubleSide }));
+  root.add(leaves);
+  root.userData.grow = growth => {
+    leaves.visible = growth > .05;
+    leaves.morphTargetInfluences[0] = growth;
+  };
+  const hurdle = [];
+  function rail(x, z, ex, ez) {
+    const n = Math.ceil(Math.hypot(ex - x, ez - z) / 1.15);
+    for (let i = 0; i <= n; i++) {
+      const px = x + (ex - x) * i / n, pz = z + (ez - z) * i / n, y = ground(px, pz);
+      hurdle.push(new THREE.CylinderGeometry(.047, .062, .78, 5).translate(px, y + .32, pz));
+      if (i === n) break;
+      const nx = px + (ex - x) / n, nz = pz + (ez - z) / n, ny = ground(nx, nz);
+      for (let k = 0; k < 4; k++) {
+        const weave = (i + k) % 2 ? .045 : -.045;
+        const ox = ez === z ? 0 : weave, oz = ex === x ? 0 : weave;
+        const start = new THREE.Vector3(px + ox, y + .14 + k * .14, pz + oz);
+        const end = new THREE.Vector3(nx - ox, ny + .14 + k * .14, nz - oz);
+        const dir = end.clone().sub(start);
+        const g = new THREE.CylinderGeometry(.032, .039, dir.length(), 5);
+        g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize()));
+        const mid = start.lerp(end, .5);
+        hurdle.push(g.translate(mid.x, mid.y, mid.z));
+      }
+    }
+  }
+  rail(-w/2, -d/2, w/2, -d/2);
+  rail(-w/2, -d/2, -w/2, d/2);
+  rail(w/2, -d/2, w/2, d/2);
+  rail(-w/2, d/2, -.6, d/2);
+  rail(.6, d/2, w/2, d/2);
+  root.add(new THREE.Mesh(mergeGeometries(hurdle), mat('#816447')));
   return shadowed(root);
 }
 
@@ -182,8 +252,35 @@ export function cannon() {
 export function squareTree() {
   const root = new THREE.Group();
   root.name = 'square_tree';
-  root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.4, 5, 7).translate(0, 2.5, 0), mat('#6b5a48')));
-  const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(2.6, 1).translate(0, 6, 0), mat('#5d7e3a'));
+  const limbs = [], clusters = [];
+  const up = new THREE.Vector3(0, 1, 0);
+  function limb(a, b, r0, r1) {
+    const dir = b.clone().sub(a);
+    const g = new THREE.CylinderGeometry(r1, r0, dir.length(), 7);
+    g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(up, dir.normalize()));
+    const mid = a.clone().lerp(b, .5);
+    limbs.push(g.translate(mid.x, mid.y, mid.z));
+  }
+  const fork = new THREE.Vector3(.24, 3.6, -.12);
+  limb(new THREE.Vector3(), fork, .46, .27);
+  for (let i = 0; i < 9; i++) {
+    const a = i * 2.4, spread = 1.2 + rnd() * 1.5;
+    const end = new THREE.Vector3(Math.cos(a)*spread, 5 + rnd()*2.4, Math.sin(a)*spread);
+    const bend = end.clone().lerp(fork, .42);
+    bend.y -= .55;
+    limb(fork, bend, .19, .12);
+    limb(bend, end, .12, .05);
+    const g = new THREE.IcosahedronGeometry(1, 1).scale(1.55, 1.4 + rnd(), 1.65).translate(end.x, end.y, end.z);
+    const pos = g.attributes.position, shades = [];
+    for (let j = 0; j < pos.count; j += 3) {
+      const light = .68 + rnd()*.32;
+      for (let k = 0; k < 3; k++) shades.push(light, light, light*.92);
+    }
+    g.setAttribute('color', new THREE.Float32BufferAttribute(shades, 3));
+    clusters.push(g);
+  }
+  root.add(new THREE.Mesh(mergeGeometries(limbs), mat('#67503c')));
+  const crown = new THREE.Mesh(mergeGeometries(clusters), mat('#719344', { vertexColors: true, flatShading: true }));
   crown.name = 'square_tree_crown';
   root.add(crown);
   return shadowed(root);
@@ -454,18 +551,39 @@ const roofMaterial = (w, h) => {
 };
 // a gable roof prism: ridge along x, `w` long, `d` across, `rh` high, sitting at y0
 function gableRoof(w, d, rh, y0, overhang = 0.3) {
-  const shape = new THREE.Shape();
-  shape.moveTo(-d / 2 - overhang, 0); shape.lineTo(0, rh); shape.lineTo(d / 2 + overhang, 0); shape.lineTo(-d / 2 - overhang, 0);
-  return new THREE.ExtrudeGeometry(shape, { depth: w + overhang * 2, bevelEnabled: false }).translate(0, 0, -(w + overhang * 2) / 2).rotateY(Math.PI / 2).translate(0, y0, 0);
+  // Separate thin roof boards leave the timber gable visible beneath the eaves.
+  const half = d / 2 + overhang, pitch = Math.atan2(rh, half);
+  const sides = [-1, 1].map(side => new THREE.BoxGeometry(w + overhang * 2, .16, Math.hypot(half, rh))
+    .rotateX(side * pitch).translate(0, y0 + rh / 2, side * half / 2));
+  return mergeGeometries(sides);
+}
+let stoneTex;
+function masonry() {
+  stoneTex ||= canvasTex(128, 128, g => {
+    g.fillStyle = '#665f53';
+    g.fillRect(0, 0, 128, 128);
+    for (let row = 0; row < 8; row++) {
+      for (let i = -1; i < 5; i++) {
+        const v = Math.floor(117 + rnd() * 39), x = i * 32 + (row % 2) * 16, y = row * 16;
+        g.fillStyle = `rgb(${v},${v-6},${v-16})`;
+        g.beginPath();
+        g.moveTo(x + 2, y + 3); g.lineTo(x + 29, y + 1); g.lineTo(x + 31, y + 11);
+        g.lineTo(x + 26, y + 15); g.lineTo(x + 1, y + 14); g.closePath(); g.fill();
+      }
+    }
+  });
+  return mat('#ffffff', { map: stoneTex });
 }
 function chimney(root, x, y, z, h, name) {
-  const c = new THREE.Mesh(new THREE.BoxGeometry(0.8, h, 0.8).translate(x, y + h / 2, z), mat('#8a8178'));
+  const c = new THREE.Mesh(new THREE.BoxGeometry(0.8, h, 0.8).translate(x, y + h / 2, z), masonry());
+  const cap = new THREE.BoxGeometry(.98, .19, .98).translate(x, y + h, z);
+  c.geometry = mergeGeometries([c.geometry, cap]);
   c.name = `${name}_chimney`;
   root.add(c);
   (root.userData.chimneys ||= []).push([x, y + h + 0.3, z]);
 }
 function footing(root, w, d, name) {
-  const f = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.35, d + 0.3).translate(0, 0.05, 0), mat('#8c877e'));
+  const f = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.35, d + 0.3).translate(0, 0.05, 0), masonry());
   f.name = `${name}_footing`;
   f.userData.stays = true;
   root.add(f);
@@ -473,8 +591,19 @@ function footing(root, w, d, name) {
 function doorsAndWindows(root, xs, y, z, size = [0.7, 0.6]) {
   const dark = mat('#3e2c1e');
   for (const [x, kind] of xs) {
-    if (kind === 'door') root.add(new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.9, 0.08).translate(x, 0.95, z), dark));
-    else root.add(new THREE.Mesh(new THREE.BoxGeometry(size[0], size[1], 0.08).translate(x, y, z), dark));
+    const door = kind === 'door', w = door ? .95 : size[0], h = door ? 1.9 : size[1], cy = door ? .95 : y;
+    const panel = new THREE.BoxGeometry(w, h, .13).translate(x, cy, z);
+    root.add(new THREE.Mesh(panel, door ? wallMaterial('boards', 1, 2) : dark));
+    const trim = [];
+    for (const side of [-1, 1]) {
+      trim.push(new THREE.BoxGeometry(.095, h + .15, .17).translate(x + side * w / 2, cy, z + .035));
+      trim.push(new THREE.BoxGeometry(w + .22, .105, .19).translate(x, cy + side * h / 2, z + .035));
+    }
+    if (!door) {
+      trim.push(new THREE.BoxGeometry(.055, h, .08).translate(x, cy, z + .09));
+      trim.push(new THREE.BoxGeometry(w, .05, .08).translate(x, cy, z + .09));
+    }
+    root.add(new THREE.Mesh(mergeGeometries(trim), mat('#70523b')));
   }
 }
 
@@ -500,6 +629,9 @@ export function rowHouse({ units = 4, unitW = 4.4, d = 7, h = 3, name = 'row', k
     const gable = new THREE.Mesh(new THREE.ShapeGeometry(tri).translate(x, h, d / 2 + 0.01), wallMaterial(kind, unitW, rh));
     gable.name = `${name}_gable`;
     root.add(gable);
+    const rear = gable.clone();
+    rear.geometry = gable.geometry.clone().rotateY(Math.PI).translate(2 * x, 0, 0);
+    root.add(rear);
     doorsAndWindows(root, [[x - unitW * 0.18, 'door'], [x + unitW * 0.22, 'win']], h * 0.62, d / 2 + 0.02);
     root.add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.08).translate(x, h + rh * 0.4, d / 2 + 0.03), mat('#3e2c1e')));
     if (chimneys.includes(i)) chimney(root, x, h + rh * 0.4, -d / 4, rh * 0.75 + 1, name);
@@ -631,31 +763,6 @@ export function charcoalMound() {
   root.add(new THREE.Mesh(new THREE.SphereGeometry(2.4, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.7, 1), mat('#3b3530', { roughness: 1 })));
   const wood = mat('#8b6e4e');
   for (let i = 0; i < 6; i++) root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.6, 6).rotateZ(Math.PI / 2).translate(3.4, 0.15 + i * 0.22, (i % 3 - 1) * 0.3), wood));
-  return shadowed(root);
-}
-
-// A formal garden like M on the plan: beds in a pattern of quarters, with paths and a low fence.
-export function parterre(w = 12, d = 20) {
-  const root = new THREE.Group();
-  root.name = 'garden';
-  root.add(new THREE.Mesh(new THREE.BoxGeometry(w, 0.1, d).translate(0, 0.02, 0), mat('#a39272')));
-  const soil = mat('#5d4532'), green = mat('#5e8a3a');
-  const plants = [];
-  const qw = w / 2 - 1.1, qd = d / 2 - 1.1;
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    const cxq = sx * (qw / 2 + 0.55), czq = sz * (qd / 2 + 0.55);
-    root.add(new THREE.Mesh(new THREE.BoxGeometry(qw, 0.22, qd).translate(cxq, 0.12, czq), soil));
-    for (let r = 0; r < 3; r++) {
-      const p = new THREE.Mesh(new THREE.BoxGeometry(qw * (0.85 - r * 0.25), 0.3, qd * (0.85 - r * 0.25)).translate(cxq, 0.3, czq), green);
-      p.userData.ring = r;
-      plants.push(p);
-      root.add(p);
-    }
-  }
-  root.userData.grow = (g) => plants.forEach((p) => { p.visible = g > 0.05 && p.userData.ring % 2 === 0; p.scale.set(1, Math.max(0.05, g), 1); });
-  const fence = [];
-  for (const [x, z, L, rot] of [[0, -d / 2, w, 0], [0, d / 2, w, 0], [-w / 2, 0, d, Math.PI / 2], [w / 2, 0, d, Math.PI / 2]]) fence.push(new THREE.BoxGeometry(L, 0.6, 0.08).translate(0, 0.3, 0).rotateY(rot).translate(x, 0, z));
-  root.add(new THREE.Mesh(mergeGeometries(fence), mat('#8a7354')));
   return shadowed(root);
 }
 

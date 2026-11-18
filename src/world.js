@@ -50,7 +50,10 @@ export const island = () => meta.island;
 function sampleGrid(g, arr, x, z) {
   const u = clamp((x - g.x0) / g.cell, 0, g.w - 1.001), v = clamp((z - g.z0) / g.cell, 0, g.h - 1.001);
   const i = Math.floor(u), j = Math.floor(v), a = u - i, b = v - j, k = j * g.w + i;
-  return mix(mix(arr[k], arr[k + 1], a), mix(arr[k + g.w], arr[k + g.w + 1], a), b);
+  // Match the diagonal used by gridMesh so props stand on the rendered surface.
+  if (a + b <= 1) return arr[k] + a * (arr[k + 1] - arr[k]) + b * (arr[k + g.w] - arr[k]);
+  const far = arr[k + g.w + 1];
+  return far + (1-a) * (arr[k + g.w] - far) + (1-b) * (arr[k + 1] - far);
 }
 const inInset = (x, z, pad = 0) => {
   const I = meta.inset;
@@ -144,6 +147,15 @@ export function buildWorld(scene, { trees, low = false }) {
             vec3 dry = diffuseColor.rgb * vec3(1.18, 1.0, 0.72);
             diffuseColor.rgb = mix(mix(dry, diffuseColor.rgb, uGreen), diffuseColor.rgb, 1.0 - land * step(0.01, diffuseColor.g - diffuseColor.b));
             float n = gn(vWPos.xz * 0.35) * 0.6 + gn(vWPos.xz * 0.06) * 0.4;
+            // Fine meadow mottling, tidal gravel and a trodden central square.
+            float grain = gn(vWPos.xz * 2.2);
+            diffuseColor.rgb *= 0.86 + 0.24 * n + 0.10 * grain;
+            vec2 delta = vWPos.xz - vec2(-18., -130.);
+            vec2 court = vec2(dot(delta, vec2(-.226,-.974)), dot(delta,vec2(.974,-.226)));
+            float yard = max(abs(court.x - 2.) - 8.2, abs(court.y + 1.) - 18.);
+            float lane = max(abs(court.x - 1.) - 1.4, abs(court.y - 19.) - 14.);
+            float worn = 1. - smoothstep(-.6, 1.5, min(yard,lane) + 1.6*(n-.5));
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.30,.216,.126) * (.76 + .36*n + .18*grain), worn * land);
             float flat_ = smoothstep(0.45, 0.8, vWNrm.y);
             float s = clamp(uSnow * 1.4 - (1.0 - flat_) * 0.9 - n * 0.35, 0.0, 1.0) * land;
             diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.95, 0.98), s);

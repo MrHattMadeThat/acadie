@@ -50,7 +50,7 @@ function plan(px, py) {
 
 // Camera for each stop: eye and look-at, in world metres.
 export const VIEWS = {
-  title: { eye: [60, 30, 900], look: [0, 10, -60] },
+  title: { eye: [105, 76, 73], look: [-12, 8, -100] },
   opening: { eye: [1900, 230, 3900], look: [300, 0, 600] },
   trade: { eye: [234, 7.5, -66], look: [219, 1.2, -76] },
   plan: { eye: [214, 15, -58], look: [-18, 14, -128] },
@@ -126,15 +126,29 @@ function place(obj, x, z, rotY = 0, parent) {
   parent.add(obj);
   return obj;
 }
-// set a building down so no corner of its footprint floats: on the lowest of its corners, sunk a little
+// Keep the threshold above the high side and carry the masonry down to the slope.
 function settle(obj, x, z, rotY, w, d) {
-  let y = Infinity;
-  for (const [a, b] of [[-w / 2, -d / 2], [w / 2, -d / 2], [-w / 2, d / 2], [w / 2, d / 2], [0, 0]]) {
-    const c = Math.cos(rotY), s = Math.sin(rotY);
-    y = Math.min(y, ground(x + a * c + b * s, z - a * s + b * c));
+  const c = Math.cos(rotY), s = Math.sin(rotY);
+  let low = Infinity, high = -Infinity;
+  for (let i = 0; i <= Math.ceil(w); i++) for (let j = 0; j <= Math.ceil(d); j++) {
+    const a = w * (i / Math.ceil(w) - .5), b = d * (j / Math.ceil(d) - .5);
+    const y = heightAt(x + a*c + b*s, z - a*s + b*c);
+    low = Math.min(low, y);
+    high = Math.max(high, y);
   }
-  obj.position.set(x, y - 0.15, z);
+  obj.position.set(x, high + .04, z);
   obj.rotation.y = rotY;
+  const foot = obj.children.find(o => o.userData.stays);
+  if (foot) {
+    const depth = high - low + .5;
+    foot.geometry.dispose();
+    foot.geometry = new THREE.BoxGeometry(w + .3, depth, d + .3).translate(0, .12 - depth / 2, 0);
+    const {position, normal, uv} = foot.geometry.attributes;
+    for (let i = 0; i < uv.count; i++) {
+      const side = Math.abs(normal.getX(i)) > .5, top = Math.abs(normal.getY(i)) > .5;
+      uv.setXY(i, (side ? position.getZ(i) : position.getX(i)) / 2, (top ? position.getZ(i) : position.getY(i)) / 1.6);
+    }
+  }
 }
 
 const rand = (() => { let s = 12345; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
@@ -189,6 +203,14 @@ export async function buildScene(scene, make) {
   // the square (N) with its tree, the well (G), the palisade (O)
   const [nx, nz] = plan(655, 430);
   const tree = place(F.squareTree(), nx, nz, 0, hab);
+  const grove = [tree];
+  for (const [px, py, size] of [[238, 215, .85], [223, 394, 1.1], [256, 902, .74], [1048, 110, 1.06], [1061, 598, .9], [1067, 792, 1.1]]) {
+    const [x, z] = plan(px, py);
+    if (heightAt(x, z) <= HW() + .8) continue;
+    const specimen = place(F.squareTree(), x, z, px, hab);
+    specimen.scale.setScalar(size);
+    grove.push(specimen);
+  }
   const wellM = await make('well');
   place(wellM, ...plan(528, 705), 0, hab);
   const palisade = new THREE.Group();
@@ -207,20 +229,29 @@ export async function buildScene(scene, make) {
   gardens.name = 'gardens';
   root.add(gardens);
   const beds = [];
-  const bed = (g, x, z, turn = 0) => { place(g, x, z, PLAN_ROT + turn, gardens); g.position.y -= 0.1; beds.push(g); return g; };
-  const gm = bed(F.parterre(21, 12), ...plan(392, 220));
-  bed(F.garden(16, 11, 6), ...plan(418, 690));
-  bed(F.garden(16, 11, 6), ...plan(418, 820));
-  bed(F.garden(12, 4, 3), ...plan(748, 828));
-  bed(F.garden(14, 5, 3), ...plan(845, 632));
-  for (const [x, z, w, d, r] of [[0, 0, 18, 11, 0.1], [20, 12, 14, 10, -0.15], [6, 26, 16, 10, 0.05]]) bed(F.garden(w, d), PLACES.islandGardens[0] + x - 8, PLACES.islandGardens[1] + z - 10, r);
+  function bed(w, d, rows, [x, z], angle, parent = gardens, formal = false) {
+    const base = heightAt(x, z), cos = Math.cos(angle), sin = Math.sin(angle);
+    const relief = (a, b) => heightAt(x + a*cos + b*sin, z - a*sin + b*cos) - base;
+    const g = F.garden(w, d, rows, relief, formal);
+    g.position.set(x, base, z);
+    g.rotation.y = angle;
+    parent.add(g);
+    beds.push(g);
+  }
+  bed(12, 21, 0, plan(392, 220), PLAN_ROT, gardens, true);
+  bed(14, 23, 0, plan(411, 755), PLAN_ROT, gardens, true);
+  bed(11, 4.5, 0, plan(748, 840), PLAN_ROT, gardens, true);
+  bed(14, 5, 0, plan(845, 654), PLAN_ROT, gardens, true);
+  for (const [x, z, w, d, r] of [[0, 0, 18, 11, .1], [20, 12, 14, 10, -.15], [6, 26, 16, 10, .05]]) {
+    bed(w, d, 7, [PLACES.islandGardens[0] + x - 8, PLACES.islandGardens[1] + z - 10], PLAN_ROT + r);
+  }
   for (const [L, at, text] of [['M', plan(392, 220), 'more gardens'], ['L', plan(418, 755), 'gardens'], ['X', plan(748, 828), 'more gardens']]) {
     const t = letterTag(L, text);
     t.position.set(at[0], ground(...at) + 4, at[1]);
     root.add(t);
     letters.plan.push(t);
   }
-  void gm;
+
 
   // ---------------------------------------------------------------- the rest of the island, from the island map
 
@@ -277,10 +308,8 @@ export async function buildScene(scene, make) {
   const charcoal = F.charcoalMound();
   place(charcoal, ...PLACES.charcoal, 0, root);
   smokes.push(Object.assign(smoke(root, [PLACES.charcoal[0], ground(...PLACES.charcoal) + 1.8, PLACES.charcoal[1]], { size: 3, count: 14 }), { kind: 'charcoal' }));
-  const mainGardens = [F.garden(22, 14, 8), F.garden(20, 14, 7)];
-  place(mainGardens[0], ...PLACES.gardensWest, 0.3, root);
-  place(mainGardens[1], ...PLACES.gardensEast, -0.2, root);
-  beds.push(...mainGardens);
+  bed(22, 14, 8, PLACES.gardensWest, .3, root);
+  bed(20, 14, 7, PLACES.gardensEast, -.2, root);
 
   // the letters of the island map, for the map viewer
   for (const [L, at, text, up] of [
@@ -509,7 +538,12 @@ export async function buildScene(scene, make) {
     march.visible = Math.round(m) === 9;
     crosses.forEach((c, i) => { c.visible = i < cal.dead; });
     for (const s of smokes) s.on = s.kind === 'camp' ? camp.visible : s.kind === 'charcoal' ? m < 4 || m > 10.5 : m >= 3 && m <= 11 && st.dismantle < 0.2;
-    tree.getObjectByName('square_tree_crown').material.color.set(season('leaves', m) > 0.3 ? '#5d7e3a' : '#7b7068');
+    const leaf = season('leaves', m);
+    for (const tree of grove) {
+      const crown = tree.getObjectByName('square_tree_crown');
+      crown.visible = leaf > .1;
+      crown.material.color.set(leaf > .55 ? '#719344' : '#ae844a');
+    }
     if (st.stop === 'winter') ship.visible = m < 3 || m > 11;
     for (const f of crowd.list) f.hidden = !f.when(st);
   }
