@@ -229,6 +229,19 @@ for (let j = 0; j < FH; j++) for (let i = 0; i < FW; i++) {
     }
   }
 }
+// Two changes after Champlain's 1613 map (see docs/SOURCES.md):
+//  - C, "petit islet servant de platte forme à mettre le canon": the island's southern tail stands apart at high
+//    tide. OSM draws it joined, so the neck is lowered to just under high water.
+//  - H, "un petit islet": Little Dochet Island, south of the island. OSM has only its name (a point), so it is
+//    raised here where the elevation tiles show it.
+for (let j = 0; j < FH; j++) for (let i = 0; i < FW; i++) {
+  const k = j * FW + i, x = cx(i), z = cz(j);
+  const neck = Math.hypot((x - 40) / 30, (z - 123) / 4.5);
+  if (neck < 1.6) heightF[k] = mix(Math.min(heightF[k], HW - 0.7), heightF[k], smooth(1, 1.6, neck));
+  const dochet = Math.hypot((x - 47) / 24, (z - 1610) / 17);
+  if (dochet < 1.8) heightF[k] = Math.max(heightF[k], mix(HW + 0.6 + 5 * (1 - dochet * dochet), HW - 2.5, smooth(0.85, 1.8, dochet)));
+}
+
 const sampleH = (x, z) => {
   const u = clamp(fu(x) - 0.5, 0, FW - 1.001), v = clamp(fv(z) - 0.5, 0, FH - 1.001);
   const i = Math.floor(u), j = Math.floor(v), a = u - i, b = v - j, k = j * FW + i;

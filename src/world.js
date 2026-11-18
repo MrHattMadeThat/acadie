@@ -352,7 +352,14 @@ export function buildWorld(scene, { trees, low = false }) {
     const x = AX.x * along + AX.y * across, z = AX.y * along - AX.x * across;
     if (heightAt(x, z) > H - 0.6) continue;
     const r = 3 + hash(tries, 3) ** 2 * 16;
-    floeData.push({ x, z, r, a: hash(tries, 4) * 6.28, ph: hash(tries, 5) * 6.28, spin: (hash(tries, 6) - 0.5) * 0.05 });
+    // how far this floe can drift up and down the river before its edge would touch land: it stops there (jammed
+    // against the shore or the island) instead of riding over it
+    const wet = (o) => [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r]].every(([dx, dz]) => heightAt(x + AX.x * o + dx, z + AX.y * o + dz) < H - 0.5);
+    if (!wet(0)) continue;
+    let lo = 0, hi = 0;
+    while (hi < 160 && wet(hi + 5)) hi += 5;
+    while (lo > -160 && wet(lo - 5)) lo -= 5;
+    floeData.push({ x, z, r, lo, hi, a: hash(tries, 4) * 6.28, ph: hash(tries, 5) * 6.28, spin: (hash(tries, 6) - 0.5) * 0.05 });
     k++;
   }
   floes.count = 0;
@@ -435,7 +442,7 @@ export function buildWorld(scene, { trees, low = false }) {
         const flow = Math.cos(state.tidePhase); // the current runs hardest at mid-tide
         for (let k = 0; k < floes.count; k++) {
           const f = floeData[k];
-          const off = -Math.sin(state.tidePhase) * 140 + Math.sin(t * 0.05 + f.ph) * 12;
+          const off = clamp(-Math.sin(state.tidePhase) * 140 + Math.sin(t * 0.05 + f.ph) * 12, f.lo, f.hi);
           const x = f.x + AX.x * off, z = f.z + AX.y * off;
           const ground = heightAt(x, z);
           const y = Math.max(state.tide, ground + 0.12) + 0.1;

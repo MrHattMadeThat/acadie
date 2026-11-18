@@ -38,6 +38,9 @@ server or GitHub Pages. `npm run build:data` rebuilds the ground from `data/raw/
 | `src/scene.js` | The story on the river: the habitation, the ship, the trade, the camp, the March canoes; camera views |
 | `src/french.js` | Procedural French models: ship, shallop, houses, palisade, gardens, cannon, trade goods |
 | `src/calendar.js` | The two-calendar card |
+| `src/people.js` | People, posed in code (from St. George 3D) |
+| `public/maps/` | Champlain's two maps of 1613 |
+| `scripts/champlain-fit.mjs` | Fits Champlain's island map onto the real island |
 | `src/tasks.js` | Question types: choice, multi, match, answer3, when (month slider), mapfind (tap the map) |
 | `src/main.js` | The app: stops, travel, the opening flight, progress |
 | `scripts/build-terrain.mjs` | Builds `public/data/` from the elevation tiles and OpenStreetMap |

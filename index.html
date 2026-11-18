@@ -20,6 +20,20 @@
     <!-- the two calendars: the French on the island, and Peskotomuhkati families -->
     <section id="calendar" class="calendar" hidden aria-label="Two calendars"></section>
 
+    <!-- Champlain's two maps of 1613, with his letters shown on the 3D scene -->
+    <button id="maps-btn" class="maps-btn" type="button" hidden>Champlain&rsquo;s maps (1613)</button>
+    <section id="maps" class="maps" hidden aria-label="Champlain's maps">
+      <header class="maps-head">
+        <div class="maps-tabs" role="tablist">
+          <button type="button" role="tab" data-map="map" aria-selected="true">The island</button>
+          <button type="button" role="tab" data-map="plan" aria-selected="false">The habitation</button>
+        </div>
+        <button id="maps-close" class="maps-close" type="button" aria-label="Close the maps">&times;</button>
+      </header>
+      <div class="maps-img"><img id="maps-img" alt="" /></div>
+      <p id="maps-note" class="maps-note"></p>
+    </section>
+
     <aside id="panel" aria-live="polite">
       <header class="panel-head">
         <p class="eyebrow"><span id="step"></span><span id="count"></span></p>

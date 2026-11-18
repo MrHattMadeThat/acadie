@@ -52,7 +52,8 @@ function resize() {
   const open = !b.contains('collapsed') && !b.contains('titled') && !b.contains('intro');
   const wide = innerWidth > 820;
   const right = wide && open ? panel.offsetWidth + 24 : 0;
-  const left = wide && open && !cal.hidden ? cal.offsetWidth + 16 : 0;
+  const maps = $('maps');
+  const left = wide && open ? Math.max(!cal.hidden ? cal.offsetWidth + 16 : 0, !maps.hidden ? maps.offsetWidth + 16 : 0) : 0;
   const below = !wide && open ? Math.round(h * 0.56) : 0; // phones: the panel is a bottom sheet
   renderer.setSize(w, h);
   labels.setSize(w, h);
@@ -275,6 +276,9 @@ function goTo(i, instant = false) {
   clearItemTags();
   $('caption').hidden = true;
   $('calendar').hidden = true;
+  closeMaps();
+  glide = null;
+  $('maps-btn').hidden = true;
   const from = { eye: camera.position.clone(), look: controls.target.clone() };
   const to = poses[i];
   const dist = from.eye.distanceTo(to.eye);
@@ -309,6 +313,7 @@ function arrive(i) {
   travel = null;
   current = i;
   const s = STOPS[i];
+  $('maps-btn').hidden = s.id === 'acadie';
   setMonth(s.month);
   $('calendar').hidden = !s.calendar;
   document.body.classList.toggle('with-calendar', !!s.calendar);
@@ -437,6 +442,90 @@ function finish() {
   $('finish').hidden = false;
 }
 
+// ------------------------------------------------------------------ Champlain's maps
+
+// Two maps from Champlain's Voyages (1613), beside the scene. While one is open, its letters show on the 3D island.
+const MAPS = {
+  map: {
+    src: 'maps/champlain-island-1613.webp',
+    alt: 'Champlain’s 1613 map of St. Croix Island, with a class grid of columns A to F and rows 1 to 4',
+    note: 'Champlain, Les Voyages (1613). North is to the right (the fleur-de-lis on the compass), so west is at the top. ' +
+      'His river is drawn much narrower than it really is. P is the Rivière des Etechemins: the French name for the people ' +
+      'of this river. Source gallica.bnf.fr / BnF.',
+  },
+  plan: {
+    src: 'maps/champlain-habitation-1613.jpg',
+    alt: 'Champlain’s 1613 plan of the habitation on St. Croix Island, with lettered buildings and gardens',
+    note: 'Champlain, Les Voyages (1613). His plan of the habitation, drawn here with its top to the west. ' +
+      'A is the house of the Sieur de Mons; P is where Champlain lodged. The real buildings were probably plainer.',
+  },
+};
+let mapShown = null;
+// While a map is open the camera looks down on the island turned the way Champlain drew it: west at the top. On his
+// island map his north is about 27 degrees off true north (scripts/champlain-fit.mjs), so that view turns with it.
+const MAP_VIEWS = {
+  map: { look: [10, 0, -20], up: [-0.889, -0.459], dist: 520, height: 740 },
+  plan: { look: [-18, 9, -130], up: [-0.974, 0.226], dist: 40, height: 175 },
+};
+let mapReturn = null, glide = null;
+function glideTo(eye, look) {
+  glide = { t: 0, fromEye: camera.position.clone(), fromLook: controls.target.clone(), eye: eye.clone(), look: look.clone() };
+  controls.enabled = false;
+}
+function stepGlide(dt) {
+  glide.t = Math.min(1, glide.t + dt / (reducedMotion ? 0.2 : 1.2));
+  const k = ease(glide.t);
+  camera.position.lerpVectors(glide.fromEye, glide.eye, k);
+  controls.target.lerpVectors(glide.fromLook, glide.look, k);
+  camera.lookAt(controls.target);
+  if (glide.t >= 1) {
+    glide = null;
+    controls.enabled = true;
+    const d = camera.position.distanceTo(controls.target);
+    controls.minDistance = Math.min(controls.minDistance, d * 0.4);
+    controls.maxDistance = Math.max(controls.maxDistance, d * 1.8);
+    controls.minAzimuthAngle = -Infinity;
+    controls.maxAzimuthAngle = Infinity;
+    controls.minPolarAngle = 0;
+    controls.update();
+  }
+}
+function mapView(which) {
+  const v = MAP_VIEWS[which];
+  const look = V(v.look);
+  return { eye: new THREE.Vector3(look.x - v.up[0] * v.dist, look.y + v.height, look.z - v.up[1] * v.dist), look };
+}
+function showMap(which) {
+  if (travel) return;
+  if (!mapShown) mapReturn = { eye: camera.position.clone(), look: controls.target.clone() };
+  const view = mapView(which);
+  glideTo(view.eye, view.look);
+  mapShown = which;
+  const m = MAPS[which];
+  $('maps-img').src = m.src;
+  $('maps-img').alt = m.alt;
+  $('maps-note').textContent = m.note;
+  document.querySelectorAll('.maps-tabs [data-map]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.map === which)));
+  $('maps').hidden = false;
+  document.body.classList.add('with-maps');
+  story.setLetters(which);
+  resize();
+}
+function closeMaps() {
+  if (!mapShown) return;
+  mapShown = null;
+  if (mapReturn && !travel) glideTo(mapReturn.eye, mapReturn.look);
+  mapReturn = null;
+  if (travel) glide = null;
+  $('maps').hidden = true;
+  document.body.classList.remove('with-maps');
+  story.setLetters(null);
+  resize();
+}
+$('maps-btn').onclick = () => (mapShown ? closeMaps() : showMap('map'));
+$('maps-close').onclick = closeMaps;
+document.querySelectorAll('.maps-tabs [data-map]').forEach((b) => { b.onclick = () => showMap(b.dataset.map); });
+
 const chapter = CHAPTERS[0];
 $('chapter-title').textContent = chapter.title;
 $('big-idea').textContent = chapter.question;
@@ -477,13 +566,14 @@ renderer.setAnimationLoop(() => {
   t += dt;
   if (intro) stepIntro(dt);
   else if (travel) stepTravel(dt);
+  else if (glide) stepGlide(dt);
   else if (document.body.classList.contains('titled')) {
     camera.position.copy(tv.eye).add(new THREE.Vector3(Math.sin(t * 0.05) * 30, 0, 0));
     camera.lookAt(tv.look);
   } else controls.update();
   // the tide runs faster on the calendar, so the ice can be seen moving
   world.tick(t, dt, camera, STOPS[current]?.calendar && !travel ? 4 : 1);
-  story.update(dt, t, world.tide());
+  story.update(dt, t, world.tide(), camera);
   renderer.render(scene, camera);
   labels.render(scene, camera);
 });

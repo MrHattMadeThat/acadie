@@ -287,41 +287,121 @@ function loft(L, B, D, { sheer = (u) => 0, width = (u) => 1, nu = 40, nv = 10 } 
   return g;
 }
 
-// A small ocean-going ship of about 1600, at anchor with its sails furled. Bow toward -x.
-export function ship({ length = 22 } = {}) {
-  const L = length, B = L * 0.3, D = L * 0.16;
+// A small ocean-going ship of about 1600, like the one on Champlain's 1613 map: a deep hull, a high stern castle,
+// three masts, square sails on the fore and main and a slanted lateen on the mizzen. Bow toward -x, waterline at y = 0.
+// sails: 'furled' (at anchor) or 'set'.
+export function ship({ length = 24, sails = 'furled' } = {}) {
+  const L = length, B = 7, T = 2.4; // length, beam, draught
   const root = new THREE.Group();
   root.name = 'ship';
-  const width = (u) => Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.05 + 0.02)), 0.55) * (u > 0.7 ? 1 - (u - 0.7) * 0.6 : 1);
-  const sheer = (u) => 0.9 * Math.pow(1 - u * 2, 2) * (u < 0.5 ? 0.8 : 0) + (u > 0.72 ? (u - 0.72) * 9 : 0);
-  const hullGeo = loft(L, B, D, { width, sheer });
-  const hullMat = mat('#4a3a2c', { side: THREE.DoubleSide, map: boards().clone() });
-  hullMat.map.rotation = Math.PI / 2;
-  hullMat.map.repeat.set(4, 10);
-  const hullMesh = new THREE.Mesh(hullGeo, hullMat);
-  hullMesh.position.y = -D * 0.55; // waterline
-  hullMesh.name = 'ship_hull';
-  root.add(hullMesh);
-  // a deck, a raised stern castle and a little forecastle
-  const deckY = D * 0.45;
-  root.add(new THREE.Mesh(new THREE.BoxGeometry(L * 0.86, 0.2, B * 0.82).translate(0, deckY, 0), mat('#a88a63')));
-  root.add(new THREE.Mesh(new THREE.BoxGeometry(L * 0.24, 2.2, B * 0.78).translate(L * 0.36, deckY + 1.1, 0), mat('#6a4f36', { map: boards() })));
-  root.add(new THREE.Mesh(new THREE.BoxGeometry(L * 0.12, 1.2, B * 0.6).translate(-L * 0.38, deckY + 0.6, 0), mat('#6a4f36', { map: boards() })));
-  // masts and yards with furled sails
-  const spar = mat('#5c4632'), canvas = mat('#e8e0cc');
-  const masts = [[-L * 0.28, 13], [0.02 * L, 17], [L * 0.33, 10]];
-  for (const [x, h] of masts) {
-    root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.24, h, 8).translate(x, deckY + h / 2, 0), spar));
-    for (const f of [0.55, 0.85]) {
-      if (h < 12 && f > 0.6) continue;
-      const yl = B * (f > 0.6 ? 0.8 : 1.15);
-      root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, yl, 6).rotateX(Math.PI / 2).translate(x, deckY + h * f, 0), spar));
-      root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, yl * 0.9, 8).rotateX(Math.PI / 2).translate(x + 0.15, deckY + h * f - 0.2, 0), canvas));
+  const sm = (a, b, v) => { const t = Math.min(1, Math.max(0, (v - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const half = (u) => (B / 2) * (u < 0.3 ? Math.pow(Math.sin((u / 0.3) * Math.PI / 2), 0.75) : u > 0.8 ? 1 - 0.3 * ((u - 0.8) / 0.2) : 1);
+  const keel = (u) => -T + (u < 0.2 ? Math.pow(1 - u / 0.2, 2) * (T + 1.1) : 0);
+  const top = (u) => 1.5 + (u < 0.25 ? 1.3 * Math.pow(1 - u / 0.25, 2) : 0) + 2.9 * sm(0.66, 0.8, u);
+  const section = (t) => (t <= 0.72 ? Math.pow(Math.sin((t / 0.72) * Math.PI / 2), 0.55) : 1 - 0.13 * ((t - 0.72) / 0.28));
+  const NU = 48, NV = 12;
+  const pos = [], col = [], idx = [];
+  const tar = new THREE.Color('#2e241c'), wood = new THREE.Color('#6b4a2e'), band = new THREE.Color('#b08a3a'), upper = new THREE.Color('#8a3b2a');
+  const cc = new THREE.Color();
+  for (let i = 0; i <= NU; i++) {
+    const u = i / NU, x = -L / 2 + u * L, hb = half(u), y0 = keel(u), y1 = top(u);
+    for (let j = -NV; j <= NV; j++) {
+      const t = 1 - Math.abs(j) / NV, side = Math.sign(j) || 1;
+      const y = y0 + (y1 - y0) * t;
+      pos.push(x, y, side * hb * section(t));
+      cc.copy(y < 0.25 ? tar : wood);
+      if (y > 1.0 && y < 1.3) cc.copy(band);
+      if (u > 0.68 && y > 2.0) cc.copy(upper);
+      col.push(cc.r, cc.g, cc.b);
     }
   }
-  // bowsprit
-  root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.16, L * 0.4, 6).rotateZ(Math.PI / 2 - 0.35).translate(-L * 0.6, deckY + 2.2, 0), spar));
+  const row = 2 * NV + 1;
+  for (let i = 0; i < NU; i++) for (let j = 0; j < row - 1; j++) {
+    const a = i * row + j, b = a + row;
+    idx.push(a, a + 1, b, a + 1, b + 1, b);
+  }
+  // the flat stern (transom), a fan over the last section
+  const last = NU * row, c0 = pos.length / 3;
+  pos.push(L / 2, (keel(1) + top(1)) / 2, 0);
+  col.push(upper.r, upper.g, upper.b);
+  for (let j = 0; j < row - 1; j++) idx.push(c0, last + j + 1, last + j);
+  const hullGeo = new THREE.BufferGeometry();
+  hullGeo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  hullGeo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  hullGeo.setIndex(idx);
+  hullGeo.computeVertexNormals();
+  const hull = new THREE.Mesh(hullGeo, mat('#ffffff', { vertexColors: true, side: THREE.DoubleSide }));
+  hull.name = 'ship_hull';
+  root.add(hull);
+  // decks: the waist, the stern castle, the forecastle
+  const deckY = 1.2;
+  const deckMat = mat('#a88a63');
+  root.add(new THREE.Mesh(new THREE.BoxGeometry(L * 0.8, 0.15, B * 0.86).translate(-L * 0.03, deckY, 0), deckMat));
+  root.add(new THREE.Mesh(new THREE.BoxGeometry(L * 0.26, 0.15, B * 0.72).translate(L * 0.36, top(0.9) - 0.5, 0), deckMat));
+  root.add(new THREE.Mesh(new THREE.BoxGeometry(L * 0.14, 0.15, B * 0.55).translate(-L * 0.36, top(0.1) - 0.45, 0), deckMat));
+  // the castle's front wall, with a door
+  root.add(new THREE.Mesh(new THREE.BoxGeometry(0.15, top(0.75) - deckY, B * 0.8).translate(L * 0.21, (top(0.75) + deckY) / 2, 0), mat('#6b4a2e', { map: boards() })));
+  root.add(new THREE.Mesh(new THREE.BoxGeometry(0.17, 1.4, 0.8).translate(L * 0.205, deckY + 0.7, 0), mat('#2e241c')));
+  // masts, yards and sails
+  const spar = mat('#5c4632'), canvas = mat('#ece4cf', { side: THREE.DoubleSide, roughness: 0.95 });
+  const lines = [];
+  const mast = (u, h) => {
+    const x = -L / 2 + u * L;
+    root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.26, h, 8).translate(x, deckY + h / 2, 0), spar));
+    root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.45, 0.5, 8).translate(x, deckY + h * 0.72, 0), spar)); // the top
+    const hb = half(u) * 0.95;
+    for (let k = -2; k <= 2; k++) for (const side of [-1, 1]) lines.push(x, deckY + h * 0.72, 0, x + k * 0.5, 1.6, side * hb);
+    lines.push(x, deckY + h, 0, x - 5, deckY + 2, 0); // a stay running forward
+    return x;
+  };
+  const square = (x, y, w, h, set) => {
+    root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, w, 6).rotateX(Math.PI / 2).translate(x, y, 0), spar));
+    if (set) {
+      const g = new THREE.PlaneGeometry(w * 0.95, h, 6, 4);
+      const P = g.attributes.position;
+      for (let i = 0; i < P.count; i++) {
+        const a = P.getX(i) / (w / 2), b = (P.getY(i) + h / 2) / h;
+        P.setZ(i, -(1 - a * a) * 0.9 * Math.sin(Math.PI * b * 0.9));
+      }
+      g.computeVertexNormals();
+      root.add(new THREE.Mesh(g.rotateY(Math.PI / 2).translate(x - 0.15, y - h / 2 - 0.1, 0), canvas));
+    } else root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, w * 0.85, 8).rotateX(Math.PI / 2).translate(x + 0.2, y - 0.25, 0), canvas));
+  };
+  const setSails = sails === 'set';
+  const fx = mast(0.25, 15), mx = mast(0.5, 19), zx = mast(0.8, 11);
+  square(fx, deckY + 15 * 0.62, B * 1.3, 4.4, setSails);
+  square(fx, deckY + 15 * 0.95, B * 0.9, 2.6, setSails);
+  square(mx, deckY + 19 * 0.6, B * 1.6, 5.6, setSails);
+  square(mx, deckY + 19 * 0.94, B * 1.1, 3.2, setSails);
+  // the mizzen's lateen yard, slanted fore and aft
+  root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 9, 6).rotateZ(Math.PI / 2 - 0.55).translate(zx, deckY + 11 * 0.65, 0), spar));
+  if (setSails) {
+    const tri = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(zx - 3.7, deckY + 4.6, 0), new THREE.Vector3(zx + 3.7, deckY + 9.8, 0), new THREE.Vector3(zx + 3.4, deckY + 3.4, 0)]);
+    tri.computeVertexNormals();
+    root.add(new THREE.Mesh(tri, canvas));
+  } else root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 7.5, 8).rotateZ(Math.PI / 2 - 0.55).translate(zx + 0.15, deckY + 11 * 0.65 - 0.3, 0), canvas));
+  // bowsprit with its spritsail yard
+  root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.2, 9, 6).rotateZ(Math.PI / 2 - 0.3).translate(-L / 2 - 2.6, top(0) + 0.6, 0), spar));
+  root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, B * 0.8, 6).rotateX(Math.PI / 2).translate(-L / 2 - 5.2, top(0) + 1.4, 0), spar));
+  lines.push(-L / 2 - 6.6, top(0) + 2, 0, fx, deckY + 15, 0);
+  lines.push(fx, deckY + 15, 0, mx, deckY + 19, 0, mx, deckY + 19, 0, zx, deckY + 11, 0);
+  const rig = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(lines, 3)), new THREE.LineBasicMaterial({ color: '#3a2e24' }));
+  root.add(rig);
+  // streamers at the mastheads, and a flag at the stern with a cross, as Champlain drew it
+  const flagMat = mat('#f2eee2', { side: THREE.DoubleSide });
+  for (const [x, h] of [[fx, 15], [mx, 19], [zx, 11]]) {
+    root.add(new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.3).translate(1.2, 0, 0).translate(x, deckY + h + 0.2, 0), flagMat));
+  }
+  root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 3.5, 5).translate(L / 2 - 0.3, top(1) + 1.75, 0), spar));
+  const flag = new THREE.Group();
+  flag.position.set(L / 2 - 0.3, top(1) + 2.7, 0);
+  flag.add(new THREE.Mesh(new THREE.PlaneGeometry(2.2, 1.5).translate(1.1, 0, 0), flagMat));
+  const crossMat = mat('#3a3e52', { side: THREE.DoubleSide });
+  flag.add(new THREE.Mesh(new THREE.PlaneGeometry(2.2, 0.22).translate(1.1, 0, 0.01), crossMat));
+  flag.add(new THREE.Mesh(new THREE.PlaneGeometry(0.22, 1.5).translate(0.8, 0, 0.01), crossMat));
+  root.add(flag);
   root.userData.deckY = deckY;
+  root.userData.flag = flag;
   return shadowed(root);
 }
 
@@ -344,4 +424,258 @@ export function boardBundle() {
   const m = new THREE.Mesh(mergeGeometries(g), mat('#b59a72'));
   m.name = 'boards';
   return shadowed(m);
+}
+
+// ------------------------------------------------------------------ buildings from Champlain's plan of the habitation
+
+// Plastered walls with dark timber framing: the look of the larger houses on the plan.
+let frameTex;
+function framed() {
+  return (frameTex ||= canvasTex(128, 128, (g) => {
+    g.fillStyle = '#e9e1cf'; g.fillRect(0, 0, 128, 128);
+    for (let i = 0; i < 400; i++) { g.fillStyle = `rgba(150,130,100,${rnd() * 0.08})`; g.fillRect(rnd() * 128, rnd() * 128, 3, 3); }
+    g.fillStyle = '#5a4332';
+    for (const x of [0, 42, 85]) g.fillRect(x, 0, 7, 128);
+    g.fillRect(0, 0, 128, 7); g.fillRect(0, 62, 128, 6); g.fillRect(0, 122, 128, 6);
+    g.save(); g.translate(46, 66); g.rotate(-0.85); g.fillRect(0, 0, 70, 5); g.restore();
+  }));
+}
+const wallMaterial = (kind, w, h) => {
+  const m = mat('#ffffff', { map: (kind === 'framed' ? framed() : boards()).clone() });
+  m.map.repeat.set(Math.max(1, w / (kind === 'framed' ? 3 : 2.5)), Math.max(1, h / (kind === 'framed' ? 3 : 2.5)));
+  m.map.needsUpdate = true;
+  return m;
+};
+const roofMaterial = (w, h) => {
+  const m = mat('#ffffff', { map: shingles().clone() });
+  m.map.repeat.set(Math.max(1, w / 3), Math.max(1, h / 2));
+  m.map.needsUpdate = true;
+  return m;
+};
+// a gable roof prism: ridge along x, `w` long, `d` across, `rh` high, sitting at y0
+function gableRoof(w, d, rh, y0, overhang = 0.3) {
+  const shape = new THREE.Shape();
+  shape.moveTo(-d / 2 - overhang, 0); shape.lineTo(0, rh); shape.lineTo(d / 2 + overhang, 0); shape.lineTo(-d / 2 - overhang, 0);
+  return new THREE.ExtrudeGeometry(shape, { depth: w + overhang * 2, bevelEnabled: false }).translate(0, 0, -(w + overhang * 2) / 2).rotateY(Math.PI / 2).translate(0, y0, 0);
+}
+function chimney(root, x, y, z, h, name) {
+  const c = new THREE.Mesh(new THREE.BoxGeometry(0.8, h, 0.8).translate(x, y + h / 2, z), mat('#8a8178'));
+  c.name = `${name}_chimney`;
+  root.add(c);
+  (root.userData.chimneys ||= []).push([x, y + h + 0.3, z]);
+}
+function footing(root, w, d, name) {
+  const f = new THREE.Mesh(new THREE.BoxGeometry(w + 0.3, 0.35, d + 0.3).translate(0, 0.05, 0), mat('#8c877e'));
+  f.name = `${name}_footing`;
+  f.userData.stays = true;
+  root.add(f);
+}
+function doorsAndWindows(root, xs, y, z, size = [0.7, 0.6]) {
+  const dark = mat('#3e2c1e');
+  for (const [x, kind] of xs) {
+    if (kind === 'door') root.add(new THREE.Mesh(new THREE.BoxGeometry(0.95, 1.9, 0.08).translate(x, 0.95, z), dark));
+    else root.add(new THREE.Mesh(new THREE.BoxGeometry(size[0], size[1], 0.08).translate(x, y, z), dark));
+  }
+}
+
+// A row of gable-fronted units, as Champlain drew the forge and carpenters' row and the lodgings: each unit has its
+// own steep roof with its gable facing the street (+z). `chimneys` lists which units have one.
+export function rowHouse({ units = 4, unitW = 4.4, d = 7, h = 3, name = 'row', kind = 'boards', chimneys = [0, 2] } = {}) {
+  const root = new THREE.Group();
+  root.name = name;
+  const W = units * unitW;
+  const walls = new THREE.Mesh(new THREE.BoxGeometry(W, h, d).translate(0, h / 2, 0), wallMaterial(kind, W, h));
+  walls.name = `${name}_walls`;
+  root.add(walls);
+  const rh = unitW * 0.95;
+  for (let i = 0; i < units; i++) {
+    const x = -W / 2 + unitW * (i + 0.5);
+    // the roof's ridge runs back from the street, so the gable faces front
+    const roof = new THREE.Mesh(gableRoof(d, unitW, rh, h, 0.15).rotateY(Math.PI / 2).translate(x, 0, 0), roofMaterial(d, rh));
+    roof.name = `${name}_roof`;
+    root.add(roof);
+    // the gable end's triangle of wall
+    const tri = new THREE.Shape();
+    tri.moveTo(-unitW / 2, 0); tri.lineTo(0, rh); tri.lineTo(unitW / 2, 0); tri.lineTo(-unitW / 2, 0);
+    const gable = new THREE.Mesh(new THREE.ShapeGeometry(tri).translate(x, h, d / 2 + 0.01), wallMaterial(kind, unitW, rh));
+    gable.name = `${name}_gable`;
+    root.add(gable);
+    doorsAndWindows(root, [[x - unitW * 0.18, 'door'], [x + unitW * 0.22, 'win']], h * 0.62, d / 2 + 0.02);
+    root.add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.08).translate(x, h + rh * 0.4, d / 2 + 0.03), mat('#3e2c1e')));
+    if (chimneys.includes(i)) chimney(root, x, h + rh * 0.4, -d / 4, rh * 0.75 + 1, name);
+  }
+  footing(root, W, d, name);
+  return shadowed(root);
+}
+
+// A one-ridge house: long side to the street (+z), gable ends left and right.
+export function hall({ w = 10, d = 6, h = 3, name = 'hall', kind = 'boards', chimneyAt = 0.35, doors = null } = {}) {
+  const root = new THREE.Group();
+  root.name = name;
+  const walls = new THREE.Mesh(new THREE.BoxGeometry(w, h, d).translate(0, h / 2, 0), wallMaterial(kind, w, h));
+  walls.name = `${name}_walls`;
+  root.add(walls);
+  const rh = d * 0.9;
+  const roof = new THREE.Mesh(gableRoof(w, d, rh, h), roofMaterial(w, rh));
+  roof.name = `${name}_roof`;
+  root.add(roof);
+  for (const side of [-1, 1]) {
+    const tri = new THREE.Shape();
+    tri.moveTo(-d / 2, 0); tri.lineTo(0, rh); tri.lineTo(d / 2, 0); tri.lineTo(-d / 2, 0);
+    const g = new THREE.Mesh(new THREE.ShapeGeometry(tri).rotateY(side * Math.PI / 2).translate(side * (w / 2 + 0.01), h, 0), wallMaterial(kind, d, rh));
+    g.material.side = THREE.DoubleSide;
+    g.name = `${name}_gable`;
+    root.add(g);
+  }
+  doorsAndWindows(root, doors || [[-w * 0.2, 'door'], [w * 0.1, 'win'], [w * 0.32, 'win'], [-w * 0.4, 'win']], h * 0.6, d / 2 + 0.02);
+  if (chimneyAt != null) chimney(root, w * chimneyAt, h + rh * 0.35, -d * 0.12, rh * 0.7 + 1.2, name);
+  footing(root, w, d, name);
+  return shadowed(root);
+}
+
+// The house of the Sieur de Mons (A on the plan): the grandest building, two storeys of framed walls under a steep
+// pavilion roof, with a dormer and a little lantern on top, and a tall narrow wing beside it.
+export function demonsHouse() {
+  const root = new THREE.Group();
+  root.name = 'demons_house';
+  const w = 9, d = 8, h = 5.6;
+  const walls = new THREE.Mesh(new THREE.BoxGeometry(w, h, d).translate(0, h / 2, 0), wallMaterial('framed', w, h));
+  walls.name = 'demons_house_walls';
+  root.add(walls);
+  // a pavilion roof: four steep faces up to a short ridge
+  const rh = 5.2;
+  const g = new THREE.CylinderGeometry(0.5, 1, rh, 4, 1).rotateY(Math.PI / 4).scale(w * 0.78, 1, d * 0.78).translate(0, h + rh / 2, 0);
+  const roof = new THREE.Mesh(g, roofMaterial(w, rh));
+  roof.name = 'demons_house_roof';
+  root.add(roof);
+  const lantern = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.7, 2.2, 6).translate(0, h + rh + 1.1, 0), mat('#5d5148'));
+  lantern.name = 'demons_house_lantern';
+  root.add(lantern);
+  const dormer = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.5, 1.4).translate(0, h + 1.2, d / 2 - 0.6), wallMaterial('framed', 1.4, 1.5));
+  root.add(dormer);
+  const dr = new THREE.Mesh(gableRoof(1.4, 1.6, 1.0, h + 1.95, 0.1).rotateY(Math.PI / 2).translate(0, 0, d / 2 - 0.6), roofMaterial(1.6, 1));
+  dr.name = 'demons_house_roof';
+  root.add(dr);
+  doorsAndWindows(root, [[0, 'door'], [-2.6, 'win'], [2.6, 'win']], 1.7, d / 2 + 0.02, [0.8, 0.9]);
+  doorsAndWindows(root, [[-2.6, 'win'], [0, 'win'], [2.6, 'win']], 4.2, d / 2 + 0.02, [0.8, 0.9]);
+  chimney(root, w * 0.3, h + 1.5, -d * 0.2, 4.5, 'demons_house');
+  chimney(root, -w * 0.3, h + 1.5, -d * 0.2, 4.5, 'demons_house');
+  footing(root, w, d, 'demons_house');
+  return shadowed(root);
+}
+
+// The well (G on the plan): a stone ring with a wooden frame and a bucket.
+export function well() {
+  const root = new THREE.Group();
+  root.name = 'well';
+  root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.85, 0.9, 0.9, 14, 1, true).translate(0, 0.45, 0), mat('#8f877c', { side: THREE.DoubleSide })));
+  root.add(new THREE.Mesh(new THREE.CircleGeometry(0.8, 14).rotateX(-Math.PI / 2).translate(0, 0.3, 0), mat('#1e2a30')));
+  const wood = mat('#6e5238');
+  for (const x of [-0.8, 0.8]) root.add(new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.2, 0.12).translate(x, 1.1, 0), wood));
+  root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.8, 8).rotateZ(Math.PI / 2).translate(0, 1.9, 0), wood));
+  root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.13, 0.3, 8).translate(0.2, 1.1, 0), wood));
+  return shadowed(root);
+}
+
+// The bake house (H): a small house with the bread oven built onto its back.
+export function bakehouse() {
+  const root = hall({ w: 7, d: 5, h: 2.6, name: 'bakehouse', chimneyAt: -0.3, doors: [[-1, 'door'], [1.6, 'win']] });
+  const o = oven();
+  o.position.set(1, 0, -3.2);
+  o.scale.setScalar(1.3);
+  root.add(o);
+  return root;
+}
+
+// An earth platform faced with wicker gabions, with cannon on it (C and D on the map).
+export function battery(guns = 2) {
+  const root = new THREE.Group();
+  root.name = 'battery';
+  root.add(new THREE.Mesh(new THREE.CylinderGeometry(4.6, 5.4, 1.1, 10).translate(0, 0.35, 0), mat('#7d6a52', { roughness: 1 })));
+  const wicker = mat('#8a6e44', { roughness: 1 });
+  for (let i = 0; i < 9; i++) {
+    const a = -1.3 + (i / 8) * 2.6;
+    root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 1.2, 8).translate(Math.sin(a) * 4.2, 1.5, Math.cos(a) * 4.2), wicker));
+  }
+  for (let k = 0; k < guns; k++) {
+    const c = cannon();
+    c.rotation.y = -Math.PI / 2;
+    c.position.set((k - (guns - 1) / 2) * 2.4, 0.9, 1.6);
+    root.add(c);
+  }
+  return shadowed(root);
+}
+
+// The water mill de Mons had started on the west shore (I): a small mill house with a wheel. `wheel` turns.
+export function waterMill() {
+  const root = hall({ w: 6, d: 5, h: 3, name: 'mill', chimneyAt: null, doors: [[-1.2, 'door'], [1.4, 'win']] });
+  const wheel = new THREE.Group();
+  const wood = mat('#6e5238');
+  wheel.add(new THREE.Mesh(new THREE.TorusGeometry(1.8, 0.12, 6, 18), wood));
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    wheel.add(new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.9, 0.7).translate(0, 1.85, 0).rotateZ(a), wood));
+  }
+  wheel.add(new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 1, 8).rotateX(Math.PI / 2), wood));
+  wheel.position.set(3.6, 1.7, 0);
+  wheel.rotation.y = Math.PI / 2;
+  root.add(wheel);
+  root.userData.wheel = wheel;
+  return shadowed(root);
+}
+
+// The place where they made charcoal (L): an earth-covered mound of wood, smouldering.
+export function charcoalMound() {
+  const root = new THREE.Group();
+  root.name = 'charcoal';
+  root.add(new THREE.Mesh(new THREE.SphereGeometry(2.4, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.7, 1), mat('#3b3530', { roughness: 1 })));
+  const wood = mat('#8b6e4e');
+  for (let i = 0; i < 6; i++) root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.6, 6).rotateZ(Math.PI / 2).translate(3.4, 0.15 + i * 0.22, (i % 3 - 1) * 0.3), wood));
+  return shadowed(root);
+}
+
+// A formal garden like M on the plan: beds in a pattern of quarters, with paths and a low fence.
+export function parterre(w = 12, d = 20) {
+  const root = new THREE.Group();
+  root.name = 'garden';
+  root.add(new THREE.Mesh(new THREE.BoxGeometry(w, 0.1, d).translate(0, 0.02, 0), mat('#a39272')));
+  const soil = mat('#5d4532'), green = mat('#5e8a3a');
+  const plants = [];
+  const qw = w / 2 - 1.1, qd = d / 2 - 1.1;
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const cxq = sx * (qw / 2 + 0.55), czq = sz * (qd / 2 + 0.55);
+    root.add(new THREE.Mesh(new THREE.BoxGeometry(qw, 0.22, qd).translate(cxq, 0.12, czq), soil));
+    for (let r = 0; r < 3; r++) {
+      const p = new THREE.Mesh(new THREE.BoxGeometry(qw * (0.85 - r * 0.25), 0.3, qd * (0.85 - r * 0.25)).translate(cxq, 0.3, czq), green);
+      p.userData.ring = r;
+      plants.push(p);
+      root.add(p);
+    }
+  }
+  root.userData.grow = (g) => plants.forEach((p) => { p.visible = g > 0.05 && p.userData.ring % 2 === 0; p.scale.set(1, Math.max(0.05, g), 1); });
+  const fence = [];
+  for (const [x, z, L, rot] of [[0, -d / 2, w, 0], [0, d / 2, w, 0], [-w / 2, 0, d, Math.PI / 2], [w / 2, 0, d, Math.PI / 2]]) fence.push(new THREE.BoxGeometry(L, 0.6, 0.08).translate(0, 0.3, 0).rotateY(rot).translate(x, 0, z));
+  root.add(new THREE.Mesh(mergeGeometries(fence), mat('#8a7354')));
+  return shadowed(root);
+}
+
+// A plank, for people carrying boards.
+export function plankPile(n = 6) {
+  const g = [];
+  for (let i = 0; i < n; i++) g.push(new THREE.BoxGeometry(3.6, 0.06, 0.3).translate((i % 2) * 0.2, 0.05 + i * 0.065, (i % 3 - 1) * 0.32));
+  const m = new THREE.Mesh(mergeGeometries(g), mat('#b59a72'));
+  m.name = 'planks';
+  return shadowed(m);
+}
+
+// A boulder for the rocky shoals around the island (G on the map).
+export function boulderGeometry() {
+  const g = new THREE.IcosahedronGeometry(1, 1);
+  const P = g.attributes.position;
+  for (let i = 0; i < P.count; i++) {
+    const k = 0.75 + 0.4 * Math.abs(Math.sin(P.getX(i) * 3.1 + P.getZ(i) * 2.3));
+    P.setXYZ(i, P.getX(i) * k, P.getY(i) * k * 0.6, P.getZ(i) * k);
+  }
+  g.computeVertexNormals();
+  return g;
 }

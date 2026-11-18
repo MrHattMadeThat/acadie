@@ -3,7 +3,7 @@
 import { STOPS, CALENDAR, CHAPTERS } from '../src/content.js';
 
 // Keep in step with the `picks` list in src/scene.js.
-const PICKS = ['pelts', 'trade_kettle', 'axe', 'cloth', 'storehouse', 'gardens', 'palisade', 'cannon'];
+const PICKS = ['pelts', 'trade_kettle', 'axe', 'cloth', 'storehouse', 'gardens', 'palisade', 'battery_north', 'battery_south'];
 const VIEWS = ['trade', 'plan', 'island', 'winter', 'sickness', 'neighbours', 'leaving', 'acadie'];
 
 const errors = [];

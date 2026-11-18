@@ -46,6 +46,20 @@ own. Started 2026-11-18. Read `README.md` for the file map and `docs/SOURCES.md`
   `acadie.render()` before reading anything.
 - Console: `acadie.arrive(n)`, `acadie.setMonth(m)`, `acadie.story`, `acadie.world`.
 
+## Champlain's maps (2026-11-18, round 2)
+
+- The habitation is laid out letter by letter from Champlain's plan (`H` table in scene.js, plan pixels through
+  `plan()`), with its top to the west. The island and mainland sites come from his island map via
+  `scripts/champlain-fit.mjs`. See docs/SOURCES.md for every judgment call.
+- **Champlain's maps (1613)** button: a card with both maps; while one is open, his letters show on the 3D scene
+  (`story.setLetters`) and the camera glides to look down with west at the top, the way he drew them.
+- People: `src/people.js` is copied from st-george-3d (instanced, posed in code), with felt hats, knitted caps, long hair
+  and planks/logs/buckets added. All the French are men (79 wintered). Who shows when is each figure's `when(st)` in
+  scene.js. Peskotomuhkati figures appear as traders in the canoe, at the summer camp, and in March 1605; no
+  ceremony, nothing stereotyped.
+- The ice: each floe has its own free stretch of river (`lo`/`hi`) and stops at land instead of riding over it.
+- On the last stop the ship comes in close to the landing (`shipLoading`) and sits on the mud at low tide.
+
 ## Open items
 
 - The French models are procedural stand-ins (`src/french.js`); a Codex model brief like the Open Path's would be

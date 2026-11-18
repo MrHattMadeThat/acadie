@@ -146,7 +146,8 @@ export const STOPS = [
     month: 1,
     intro:
       'In June 1604, de Mons chose a small island in the middle of the river. His men built houses, a storehouse and ' +
-      'gardens. Champlain drew a plan of it, printed in 1613. This is that plan, in 3D.',
+      'gardens. Champlain drew two maps of it, printed in 1613. This is the habitation from his plan, in 3D. Open ' +
+      'Champlain’s maps to see his letters on it.',
     tasks: [
       {
         type: 'multi',
@@ -155,7 +156,7 @@ export const STOPS = [
           { text: 'Easy to defend from attack', correct: true },
           { text: 'Close to the sea', correct: true },
           { text: 'Plenty of firewood close by', why: 'Look across the water. The forest is on the shores.' },
-          { text: 'Fresh water on the island', why: 'The fresh water was on the shores too.' },
+          { text: 'Plenty of fresh water on the island', why: 'The reading puts the fresh water on the shores, across the river.' },
           { text: 'Sheltered from winter storms', why: 'It was out in the middle of the river, open to the wind.' },
         ],
         explain: 'Water all around made it easy to defend, and the sea was close for the ships. Nobody was thinking about winter yet.',
@@ -167,7 +168,7 @@ export const STOPS = [
           { id: 'storehouse', label: 'The storehouse', pick: 'storehouse', answer: 'store' },
           { id: 'garden', label: 'The gardens', pick: 'gardens', answer: 'garden' },
           { id: 'palisade', label: 'The palisade', pick: 'palisade', answer: 'palisade' },
-          { id: 'cannon', label: 'The cannon', pick: 'cannon', answer: 'cannon' },
+          { id: 'cannon', label: 'The cannon platform', pick: 'battery_north', answer: 'cannon' },
         ],
         choices: [
           { id: 'store', label: 'Kept the food and supplies' },
@@ -175,8 +176,22 @@ export const STOPS = [
           { id: 'palisade', label: 'A wall of pointed stakes, for defence' },
           { id: 'cannon', label: 'Guarded the river from ships' },
         ],
-        // The cannon on a little islet beside the island: NPS, "Saint Croix Island Settlement" (nps.gov).
+        // The cannon: D on Champlain's island map, a platform at the north end.
         explain: 'Everything was built to keep the colony safe and fed, the French way. Notice what is missing: nothing here is about getting through a winter.',
+      },
+      {
+        type: 'choice',
+        // Champlain's map of the island (1613): C, a little islet used as a platform for the cannon; D, a platform
+        // where cannon were put. NPS also describes the fortified islet.
+        lead: 'Open Champlain’s maps and look for the letters C and D.',
+        prompt: 'Champlain’s map shows cannon in two places. Where?',
+        options: [
+          { text: 'On a little islet off the south end, and on a platform at the north end', correct: true },
+          { text: 'Only on the ship', why: 'Look at C and D on Champlain’s map of the island. Both are on land.' },
+          { text: 'On both shores of the river', why: 'Both are on or beside the island itself.' },
+          { text: 'Inside the storehouse', why: 'No. Cannon guard the river, so they face the water.' },
+        ],
+        explain: 'C is a little islet off the south end, used as a platform for a cannon. D is a platform at the north end. Ships coming up or down the river had to pass one of them.',
       },
       {
         type: 'choice',
@@ -237,7 +252,7 @@ export const STOPS = [
           { text: 'Melted snow', correct: true },
           { text: 'Sea water', why: 'Salt water makes you thirstier and sicker. They melted something else.' },
           { text: 'Cider, as much as they liked', why: 'The cider froze solid. It was handed out by the pound.' },
-          { text: 'Water from a stream on the island', why: 'There was no fresh water on the island.' },
+          { text: 'Water from a stream on the island', why: 'There was no stream on the island.' },
         ],
         explain: 'They melted snow. Their cider froze solid and had to be handed out by the pound, like cheese.',
       },
