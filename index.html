@@ -10,7 +10,11 @@
   <body class="titled loading">
     <div id="stage"></div>
 
-    <nav id="chapter-index" aria-label="Chapter stops and question progress"></nav>
+    <!-- the stop tabs, and Champlain's two maps of 1613 beside them -->
+    <div id="topbar">
+      <nav id="chapter-index" aria-label="Chapter stops and question progress"></nav>
+      <button id="maps-btn" class="maps-btn" type="button" title="Champlain&rsquo;s maps (1613)" aria-label="Champlain&rsquo;s maps (1613)" aria-expanded="false" hidden>Maps</button>
+    </div>
 
     <!-- what this stop is about, over the scene -->
     <section id="caption" class="caption" hidden>
@@ -22,7 +26,6 @@
     <section id="calendar" class="calendar" hidden aria-label="Two calendars"></section>
 
     <!-- Champlain's two maps of 1613, with his letters shown on the 3D scene -->
-    <button id="maps-btn" class="maps-btn" type="button" hidden>Champlain&rsquo;s maps (1613)</button>
     <section id="maps" class="maps" hidden aria-label="Champlain's maps">
       <header class="maps-head">
         <div class="maps-tabs" role="tablist">

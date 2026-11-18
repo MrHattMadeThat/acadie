@@ -76,8 +76,8 @@ button:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 }
 
 /* Chapter index. The rule under each numeral records gold and plain marks. */
+#topbar { position: fixed; left: 16px; top: 10px; z-index: 3; display: flex; align-items: stretch; gap: 8px; }
 #chapter-index {
-  position: fixed; left: 16px; top: 10px; z-index: 3;
   display: flex; gap: 2px; padding: 2px; background: var(--frame-ink);
   border: 1px solid var(--frame-wood); box-shadow: 1px 2px 0 #19120c80;
 }
@@ -416,20 +416,18 @@ body.loading::after { content: 'Loading the river\2026'; position: fixed; inset:
 }
 
 /* ------------------------------------------------ Champlain's maps */
-.maps-btn {
-  position: fixed; right: 476px; bottom: 20px; z-index: 3;
-  border: 0;  padding: 8px 16px; font-weight: 700; cursor: pointer;
-  background: var(--bark); color: var(--purple); box-shadow: 0 4px 14px rgba(0,0,0,.3);
-}
+/* sits beside the stop tabs, the same height */
+.maps-btn { padding: 0 14px; font: 600 16px var(--display); cursor: pointer; }
 .maps-btn[hidden] { display: none; }
-.maps-btn:hover { background: #fff; }
 .maps {
   position: fixed; left: 16px; top: 56px; bottom: 16px; z-index: 5; width: min(560px, calc(100vw - 500px));
   display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 12px;
   background: var(--lenticels), var(--bark); box-shadow: 0 10px 28px rgba(0,0,0,.4);
 }
 .maps[hidden] { display: none; }
-body.with-maps .caption, body.with-maps .calendar, body.with-maps .maps-btn { visibility: hidden; }
+body.with-maps .caption, body.with-maps .calendar { visibility: hidden; }
+/* while the maps are open the button stays lit, and closes them */
+body.with-maps .maps-btn { outline: 2px solid var(--gold); outline-offset: 0; }
 .maps-head { display: flex; align-items: center; gap: 8px; }
 .maps-tabs { display: flex; gap: 6px; flex: 1; }
 .maps-tabs button { border: 1.5px solid var(--line); background: #fffdf7;  padding: 5px 14px; font-weight: 700; color: var(--purple); cursor: pointer; }
@@ -445,8 +443,7 @@ body.with-maps .caption, body.with-maps .calendar, body.with-maps .maps-btn { vi
 .tag.letter:hover span { display: inline; }
 .tag.letter b { display: grid; place-items: center; width: 22px; height: 22px;  background: var(--red); color: #fff; font: 700 13px var(--display); }
 @media (max-width: 820px) {
-  .maps { left: 8px; right: 8px; top: 8px; bottom: calc(54vh + 16px); width: auto; }
-  .maps-btn { right: 8px; bottom: calc(54vh + 16px); }
+  .maps { left: 8px; right: 8px; top: 56px; bottom: calc(54vh + 16px); width: auto; }
 }
 
 /* Copper-rimmed plaques, adapted from latin-game's lit and shaded frame bands. */

@@ -146,8 +146,8 @@ export const STOPS = [
     month: 1,
     intro:
       'In June 1604, de Mons chose a small island in the middle of the river. His men built houses, a storehouse and ' +
-      'gardens. Champlain drew two maps of it, printed in 1613. This is the habitation from his plan, in 3D. Open ' +
-      'Champlain’s maps to see his letters on it.',
+      'gardens. Champlain drew two maps of it, printed in 1613. This is the habitation from his plan, in 3D. Press ' +
+      'Maps, at the top, to see his letters on it.',
     tasks: [
       {
         type: 'multi',
@@ -183,7 +183,7 @@ export const STOPS = [
         type: 'choice',
         // Champlain's map of the island (1613): C, a little islet used as a platform for the cannon; D, a platform
         // where cannon were put. NPS also describes the fortified islet.
-        lead: 'Open Champlain’s maps and look for the letters C and D.',
+        lead: 'Press Maps and look for the letters C and D.',
         prompt: 'Champlain’s map shows cannon in two places. Where?',
         options: [
           { text: 'On a little islet off the south end, and on a platform at the north end', correct: true },

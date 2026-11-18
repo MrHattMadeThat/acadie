@@ -526,6 +526,7 @@ function showMap(which) {
   document.querySelectorAll('.maps-tabs [data-map]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.map === which)));
   $('maps').hidden = false;
   document.body.classList.add('with-maps');
+  $('maps-btn').setAttribute('aria-expanded', 'true');
   story.setLetters(which);
   resize();
 }
@@ -537,6 +538,7 @@ function closeMaps() {
   if (travel) glide = null;
   $('maps').hidden = true;
   document.body.classList.remove('with-maps');
+  $('maps-btn').setAttribute('aria-expanded', 'false');
   story.setLetters(null);
   resize();
 }
