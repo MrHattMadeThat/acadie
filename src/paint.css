@@ -1,0 +1,32 @@
+/* Shared materials. Override these properties on a module root to reskin it.
+   Apply paint-paper to a reading surface and paint-button to a primary action. */
+:root {
+  --frame-light: #cf9362;
+  --frame-wood: #925e3d;
+  --frame-shade: #61402c;
+  --frame-ink: #170f0c;
+  --frame-text: #fff3dc;
+  --frame-face: linear-gradient(165deg, #322b24, #1c1917 65%);
+  --frame-bevel: inset 1px 1px 0 #ffdfab44, inset -1px -1px 0 #0009,
+    0 0 0 1px var(--frame-ink), 1px 3px 0 var(--frame-ink);
+  --paint-paper: #f4ecd9;
+  --paint-ink: #252d27;
+  --paint-accent: #294e49;
+  --paint-accent-light: #376660;
+  --paint-gold: #efc079;
+  --paint-edge: polygon(.3% 1%, 24% .5%, 45% 1%, 74% 0, 99.6% .6%, 100% 41%, 99.5% 99%, 69% 99.6%, 43% 99%, .2% 100%, .5% 68%, 0 27%);
+  --paint-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='120'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.45 .72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23888' opacity='.12' filter='url(%23g)' d='M0 0h160v120H0z'/%3E%3C/svg%3E");
+}
+.paint-paper { color: var(--paint-ink); background: var(--paint-grain), var(--paint-paper); }
+.paint-button, .paint-box {
+  background: var(--paint-grain), var(--frame-face);
+  border: 2px solid;
+  border-color: var(--frame-light) var(--frame-shade) var(--frame-shade) var(--frame-wood);
+  box-shadow: var(--frame-bevel);
+  color: var(--frame-text);
+}
+.paint-button { padding: .65em 1.2em; font: inherit; font-weight: 700; cursor: pointer; }
+.paint-button:hover:not(:disabled) { --frame-face: linear-gradient(160deg, #493a2c, #30251f); }
+.paint-button:active:not(:disabled) { transform: translateY(1px); }
+.paint-button:focus-visible { outline: 3px solid var(--paint-gold); outline-offset: 3px; }
+.paint-button:disabled { opacity: .4; cursor: default; }

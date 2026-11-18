@@ -49,7 +49,7 @@ function resize() {
   const w = host.clientWidth, h = host.clientHeight;
   const panel = $('panel'), cal = $('calendar');
   const b = document.body.classList;
-  const open = !b.contains('collapsed') && !b.contains('titled') && !b.contains('intro');
+  const open = !b.contains('roaming') && !b.contains('collapsed') && !b.contains('titled') && !b.contains('intro');
   const wide = innerWidth > 820;
   const right = wide && open ? panel.offsetWidth + 24 : 0;
   const maps = $('maps');
@@ -96,25 +96,37 @@ function store() {
 let save = loadSave() || { reached: 0, marks: {} };
 const marksFor = (id) => (save.marks[id] ||= []);
 
-// Across the top: one mark per question. Gold for right on the first try, plain otherwise.
-function drawString() {
-  const bar = $('string');
-  bar.replaceChildren(...STOPS.map((s, i) => {
-    const b = document.createElement('button');
-    b.className = `knot${i === current ? ' here' : ''}`;
-    b.type = 'button';
-    b.title = s.title;
-    b.setAttribute('aria-label', `${i + 1}. ${s.title}`);
-    b.disabled = !(free || i <= save.reached) || travel != null;
-    b.onclick = () => goTo(i);
-    const got = marksFor(s.id);
-    s.tasks.forEach((_, k) => {
-      const d = document.createElement('span');
-      d.className = `bead ${got[k] || ''}`;
-      b.append(d);
-    });
-    return b;
+function drawChapterIndex() {
+  $('chapter-index').replaceChildren(...STOPS.map((stop, i) => {
+    const marks = marksFor(stop.id);
+    const total = stop.tasks.length;
+    const answered = marks.filter(Boolean).length;
+    const gold = marks.filter(mark => mark === 'gold').length;
+    const tab = document.createElement('button');
+    tab.className = 'stop-tab';
+    tab.type = 'button';
+    tab.textContent = String(i + 1);
+    tab.title = `${stop.title} · ${answered}/${total} answered · ${gold} gold`;
+    tab.setAttribute('aria-label', `Stop ${i + 1}. ${tab.title}`);
+    if (current === i) tab.setAttribute('aria-current', 'step');
+    tab.style.setProperty('--answered', `${100 * answered / total}%`);
+    tab.style.setProperty('--gold-marks', `${100 * gold / total}%`);
+    tab.disabled = !(free || i <= save.reached) || travel != null;
+    tab.onclick = () => goTo(i);
+    return tab;
   }));
+}
+
+function setInitialHeading(heading, title) {
+  heading.textContent = title;
+  const index = title.charCodeAt(0) - 65;
+  if (!(index >= 0 && index < 26)) return;
+  const initial = document.createElement('span');
+  initial.className = 'initial-tile';
+  initial.style.backgroundPosition = `${(index % 7) * 100 / 6}% ${Math.floor(index / 7) * 100 / 3}%`;
+  initial.textContent = title[0];
+  heading.replaceChildren(initial, title.slice(1));
+  heading.setAttribute('aria-label', title);
 }
 
 // ------------------------------------------------------------------ the panel
@@ -126,7 +138,7 @@ function openStop(i) {
   $('place').textContent = s.place;
   $('intro').textContent = s.intro;
   $('caption').hidden = false;
-  $('title').textContent = s.title;
+  setInitialHeading($('title'), s.title);
   $('step').textContent = `Stop ${i + 1} of ${STOPS.length}`;
   const got = marksFor(s.id);
   let first = s.tasks.findIndex((_, k) => !got[k]);
@@ -134,7 +146,7 @@ function openStop(i) {
   arriveAt = null;
   if (first < 0) showStopDone(i);
   else showTask(i, first);
-  drawString();
+  drawChapterIndex();
   $('task').scrollTop = 0;
 }
 
@@ -161,6 +173,9 @@ function addItemTags(task) {
     d.innerHTML = '<b></b><span></span>';
     d.firstChild.textContent = String(k + 1);
     d.lastChild.textContent = item.label;
+    // the name stays readable while the card shows only its number
+    d.setAttribute('aria-label', `${k + 1}. ${item.label}`);
+    d.title = item.label;
     d.onclick = () => controller?.pick(item.pick);
     const tag = new CSS2DObject(d);
     tag.center.set(0.5, 1.15);
@@ -173,7 +188,10 @@ function tagsReact(e) {
   if (e.type === 'select') itemTags.forEach((t) => t.el.classList.toggle('current', t.pick === e.pick));
   if (e.type === 'item-correct') {
     const t = itemTags.find((x) => x.pick === e.pick);
-    if (t) { t.el.classList.remove('current'); t.el.classList.add('done'); t.el.lastChild.textContent = e.answer; }
+    if (t) { t.el.classList.remove('current'); t.el.classList.add('done'); t.el.lastChild.textContent = e.answer;
+      t.el.setAttribute('aria-label', `${t.el.firstChild.textContent}. ${t.el.title}: ${e.answer}`);
+      t.el.title += ` · ${e.answer}`;
+    }
   }
 }
 function dropTarget(x, y) {
@@ -199,7 +217,7 @@ function showTask(i, k) {
       const got = marksFor(s.id);
       if (!got[k]) got[k] = firstTry ? 'gold' : 'white';
       store();
-      drawString();
+      drawChapterIndex();
       story.react({ type: 'task-done', index: k });
       controller = null;
       drawNav(i, k);
@@ -287,7 +305,7 @@ function goTo(i, instant = false) {
   controls.enabled = false;
   document.body.classList.add('travelling');
   story.setStop(STOPS[i].id, STOPS[i].month);
-  drawString();
+  drawChapterIndex();
 }
 
 const tmpEye = new THREE.Vector3(), tmpLook = new THREE.Vector3();
@@ -526,8 +544,60 @@ $('maps-btn').onclick = () => (mapShown ? closeMaps() : showMap('map'));
 $('maps-close').onclick = closeMaps;
 document.querySelectorAll('.maps-tabs [data-map]').forEach((b) => { b.onclick = () => showMap(b.dataset.map); });
 
+// Explore the live island without entering a lesson or touching the chapter save.
+const roamBack = $('roam-back');
+const orbitSurface = renderer.domElement;
+$('roam').onclick = () => {
+  $('title-screen').hidden = true;
+  document.body.classList.replace('titled', 'roaming');
+  $('roam-tools').hidden = false;
+  const island = STOPS.find(s => s.id === 'island');
+  story.setStop(island.id, island.month);
+  setMonth(island.month);
+  world.setEvening(0);
+  const view = pose(VIEWS.island);
+  camera.position.copy(view.eye);
+  controls.target.copy(view.look);
+  controls.enabled = controls.enablePan = true;
+  controls.screenSpacePanning = false;
+  controls.minDistance = 6;
+  controls.maxDistance = 1800;
+  controls.maxPolarAngle = Math.PI * .47;
+  controls.listenToKeyEvents(orbitSurface);
+  orbitSurface.tabIndex = 0;
+  orbitSurface.setAttribute('aria-label', 'Explore the island. Arrow keys pan the view.');
+  controls.update();
+  resize();
+  orbitSurface.focus();
+};
+controls.addEventListener('change', () => {
+  if (controls.enablePan) world.setFocus(controls.target);
+});
+roamBack.onclick = () => {
+  controls.stopListenToKeyEvents();
+  orbitSurface.removeAttribute('tabindex');
+  orbitSurface.removeAttribute('aria-label');
+  controls.enabled = controls.enablePan = false;
+  controls.enableDamping = false;
+  controls.update();
+  controls.enableDamping = true;
+  controls.target.copy(tv.look);
+  camera.position.copy(tv.eye);
+  camera.lookAt(tv.look);
+  world.setFocus(tv.look);
+  story.setStop('trade', 0);
+  setMonth(0);
+  world.setEvening(.75);
+  $('roam-tools').hidden = true;
+  $('title-screen').hidden = false;
+  document.body.classList.replace('roaming', 'titled');
+  resize();
+  $('roam').focus();
+};
+
 const chapter = CHAPTERS[0];
-$('chapter-title').textContent = chapter.title;
+setInitialHeading($('chapter-title'), chapter.title);
+setInitialHeading($('finish-title'), chapter.title);
 $('big-idea').textContent = chapter.question;
 $('finish-idea').textContent = chapter.question;
 $('start').onclick = () => start(false);
@@ -555,7 +625,7 @@ story.setStop('trade', 0);
 setMonth(0);
 world.setEvening(0.75);
 world.setFocus(tv.look);
-drawString();
+drawChapterIndex();
 document.body.classList.remove('loading');
 
 const jump = STOPS.findIndex((s) => s.id === params.get('stop'));

@@ -3,13 +3,14 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/src/paint.css" />
     <title>Acadie: The Island</title>
     <meta name="description" content="A 3D walk through the winter of 1604-05 on St. Croix Island, for Grade 8 Social Studies." />
   </head>
   <body class="titled loading">
     <div id="stage"></div>
 
-    <nav id="string" aria-label="Your progress: one mark per question"></nav>
+    <nav id="chapter-index" aria-label="Chapter stops and question progress"></nav>
 
     <!-- what this stop is about, over the scene -->
     <section id="caption" class="caption" hidden>
@@ -47,35 +48,44 @@
       </header>
       <div id="task" class="task"></div>
       <footer class="panel-foot">
-        <button id="next" class="primary next" type="button" hidden></button>
+        <button id="next" class="paint-button primary next" type="button" hidden></button>
       </footer>
     </aside>
 
     <section id="title-screen" class="titlescreen">
+      <header class="cover-head">
+        <div class="cover-brand"><span aria-hidden="true">&#10021;</span> Acadie</div>
+        <span class="cover-place">St. Croix Island &middot; 1604&ndash;05</span>
+      </header>
       <div class="title-inner">
-        <p class="eyebrow">Acadie &middot; Chapter 1</p>
+        <p class="eyebrow">Chapter 1</p>
         <h1 id="chapter-title"></h1>
         <div class="band" aria-hidden="true"></div>
         <p class="lede" id="big-idea"></p>
         <div class="row">
-          <button id="start" class="primary" type="button">Sail up the river</button>
+          <button id="start" class="paint-button primary" type="button">Sail up the river</button>
+          <button id="roam" class="paint-button" type="button">Free roam</button>
           <button id="restart" class="btn-ghost" type="button" hidden>Start over</button>
         </div>
         <p class="small">
-          St. Croix Island, 1604. Less than an hour&rsquo;s drive from St. George. Answer questions at each stop to
-          move on; right on the first try earns a gold mark.
+          The island is less than an hour&rsquo;s drive from St. George. Answer each question to move on. A correct first try earns a gold mark.
         </p>
       </div>
     </section>
+
+    <nav id="roam-tools" class="paint-box" aria-label="Free roam controls" hidden>
+      <button id="roam-back" class="paint-button" type="button">Back to title</button>
+      <span>Drag to look around. Use two fingers or right-drag to pan. Pinch or scroll to zoom.</span>
+    </nav>
 
     <p id="opening-line" class="dawn-line" aria-live="polite"></p>
     <button id="skip" class="btn-ghost skip" type="button" hidden>Skip &#8250;</button>
 
     <section id="finish" class="overlay" hidden>
-      <div class="card">
+      <div class="card paint-paper">
         <div class="band" aria-hidden="true"></div>
         <p class="eyebrow">The end of chapter 1</p>
-        <h1>The Island</h1>
+        <h1 id="finish-title"></h1>
         <p class="lede" id="finish-count"></p>
         <p>The big question was:</p>
         <p class="quote" id="finish-idea"></p>
