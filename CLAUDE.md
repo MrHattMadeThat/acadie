@@ -51,7 +51,8 @@ own. Started 2026-11-18. Read `README.md` for the file map and `docs/SOURCES.md`
 - The French models are procedural stand-ins (`src/french.js`); a Codex model brief like the Open Path's would be
   the next art step (ship, habitation buildings from Champlain's plan).
 - Confirm Champlain's dates (first snow, first ice) against his *Voyages*.
-- Git: local repository only (first commit 2026-11-18), no remote. Commits use the GitHub no-reply identity set in
+- Git: public repo MrHattMadeThat/acadie; LIVE at https://mrhattmadethat.github.io/acadie/. Pushing to `main`
+  deploys through GitHub Pages (`.github/workflows/deploy.yml` runs `npm run check` first). Commits use the GitHub no-reply identity set in
   the repo's local config, like `../st-george-3d`. Stage files by name, never `git add -A`. `data/raw/` (elevation tiles
   and OSM) is ignored, so `public/data/` is committed and `npm run build:data` only works on this machine. Ask before
   publishing anything.

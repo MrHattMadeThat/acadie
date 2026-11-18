@@ -8,6 +8,8 @@ stops and 30 questions, from the cod and beaver trade to the move to Port Royal 
 it is **Two calendars**: a slider through the months that turns the whole river through the year (snow, ice riding
 the tide, the leaves) while a card compares the French on the island with Peskotomuhkati families.
 
+Live at https://mrhattmadethat.github.io/acadie/ (every push to `main` deploys it).
+
 ## Running it
 
 ```bash
