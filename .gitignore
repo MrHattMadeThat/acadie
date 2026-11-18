@@ -1,0 +1,4 @@
+node_modules/
+dist/
+# raw downloads (elevation tiles, OSM): rebuild public/data locally with npm run build:data
+data/raw/

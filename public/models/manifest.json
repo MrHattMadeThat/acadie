@@ -1,0 +1,26 @@
+{
+  "_readme": "Models listed here load from this folder; anything else falls back to the procedural stand-in in src/props.js. Copied from the Open Path (wabanaki-wampum-review) on 2026-11-18.",
+  "models": {
+    "canoe_birch": {
+      "file": "canoe_birch.glb"
+    },
+    "canoe_paddle": {
+      "file": "canoe_paddle.glb"
+    },
+    "wigwam": {
+      "file": "wigwam.glb"
+    },
+    "fish_rack": {
+      "file": "fish_rack.glb"
+    },
+    "shore_rocks": {
+      "file": "shore_rocks.glb"
+    },
+    "driftwood": {
+      "file": "driftwood.glb"
+    },
+    "porpoise": {
+      "file": "porpoise.glb"
+    }
+  }
+}

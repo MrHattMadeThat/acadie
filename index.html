@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Acadie: The Island</title>
+    <meta name="description" content="A 3D walk through the winter of 1604-05 on St. Croix Island, for Grade 8 Social Studies." />
+  </head>
+  <body class="titled loading">
+    <div id="stage"></div>
+
+    <nav id="string" aria-label="Your progress: one mark per question"></nav>
+
+    <!-- what this stop is about, over the scene -->
+    <section id="caption" class="caption" hidden>
+      <p class="caption-place" id="place"></p>
+      <p class="caption-text" id="intro"></p>
+    </section>
+
+    <!-- the two calendars: the French on the island, and Peskotomuhkati families -->
+    <section id="calendar" class="calendar" hidden aria-label="Two calendars"></section>
+
+    <aside id="panel" aria-live="polite">
+      <header class="panel-head">
+        <p class="eyebrow"><span id="step"></span><span id="count"></span></p>
+        <h1 id="title"></h1>
+        <nav class="qnav" aria-label="Questions at this stop">
+          <button id="prev" class="navbtn" type="button">&#8249; Back</button>
+          <span id="qdots" class="qdots"></span>
+          <button id="fwd" class="navbtn" type="button">Next &#8250;</button>
+        </nav>
+        <button id="collapse" class="collapse" type="button" aria-expanded="true" aria-controls="task" title="Hide or show the questions">&#8645;</button>
+      </header>
+      <div id="task" class="task"></div>
+      <footer class="panel-foot">
+        <button id="next" class="primary next" type="button" hidden></button>
+      </footer>
+    </aside>
+
+    <section id="title-screen" class="titlescreen">
+      <div class="title-inner">
+        <p class="eyebrow">Acadie &middot; Chapter 1</p>
+        <h1 id="chapter-title"></h1>
+        <div class="band" aria-hidden="true"></div>
+        <p class="lede" id="big-idea"></p>
+        <div class="row">
+          <button id="start" class="primary" type="button">Sail up the river</button>
+          <button id="restart" class="btn-ghost" type="button" hidden>Start over</button>
+        </div>
+        <p class="small">
+          St. Croix Island, 1604. Less than an hour&rsquo;s drive from St. George. Answer questions at each stop to
+          move on; right on the first try earns a gold mark.
+        </p>
+      </div>
+    </section>
+
+    <p id="opening-line" class="dawn-line" aria-live="polite"></p>
+    <button id="skip" class="btn-ghost skip" type="button" hidden>Skip &#8250;</button>
+
+    <section id="finish" class="overlay" hidden>
+      <div class="card">
+        <div class="band" aria-hidden="true"></div>
+        <p class="eyebrow">The end of chapter 1</p>
+        <h1>The Island</h1>
+        <p class="lede" id="finish-count"></p>
+        <p>The big question was:</p>
+        <p class="quote" id="finish-idea"></p>
+        <p id="finish-none">Every stop is done. Next: who were the Acadians, and how did they live?</p>
+        <ul id="finish-review" class="review"></ul>
+        <div class="row">
+          <button id="again" class="secondary" type="button">Start again</button>
+        </div>
+      </div>
+    </section>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
