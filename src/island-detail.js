@@ -84,9 +84,9 @@ export function buildIslandDetail({ root, buildings, beds, others, pathSegs, squ
     pathSegs.push([x0, z0, x1, z1]);
   }
 
-  // ------------------------------------------------------------ the carpenters' work yard, west of their row (F)
+  // ------------------------------------------------------------ the carpenters' work yard, on flat ground north of the square
   // trestles with a squared timber, a chopping block, sawn planks, logs waiting, and chips on the ground
-  const yard = [-38, -96];
+  const yard = [-23, -121];
   {
     const wood = mat('#8a6a48'), fresh = mat('#c6a878'), bark = mat('#5e4a36');
     const g = new THREE.Group();

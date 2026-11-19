@@ -178,7 +178,7 @@ export const SCENES = [
     source: 'NPSH; READ',
   },
   {
-    id: 'cider', season: 'winter', title: 'Cider by the pound', at: [835, 275],
+    id: 'cider', season: 'winter', title: 'Cider by the pound', at: [-35.5, -108], world: true, // at the storehouse door
     cast: {
       a: { at: [0, 0], face: 'east', act: 'idle', tool: 'axe', hat: 'monmouth' },
       b: { at: [2.2, 0.6], face: 'a', act: 'shiver', hat: 'felt' },

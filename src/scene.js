@@ -202,9 +202,12 @@ export async function buildScene(scene, make) {
   // cottages with a gap of ROW_GAP between them (2026-11-18, the user: room to walk between the buildings), each a
   // little narrower than his units so the row stays near its length on the plan.
   const ROW_GAP = 1.6, ROW_NARROW = 0.88;
+  // C, the storehouse: at Champlain's spot it stood on the west bank, 10 m of slope under it and a huge stone foot to
+  // match. 2026-11-19 (the user): moved inland, beside the Swiss quarters (D), on flat ground facing the square.
+  const STORE_AT = [-40.5, -106];
   for (const [letter, name, px, py, spec, [w, d], turn, what] of H) {
-    const [x0, z0] = plan(px, py);
-    const shore = letter === 'C' || letter === 'I'; // these two stand on the bank already: don't push them nearer the water
+    const [x0, z0] = letter === 'C' ? STORE_AT : plan(px, py);
+    const shore = letter === 'C' || letter === 'I'; // I stands on the bank, C on a measured flat spot: nudge them least
     // P stood hard against the row Q on the plan (the island is no wider, so across it nothing spreads): 1.5 m east.
     // The forge E sits at the end of the carpenters' row F, which is longer now it has gaps: 1 m south.
     const [ex, ez] = letter === 'P' ? [EAST.x * 1.5, EAST.y * 1.5] : letter === 'E' ? [-NORTH.x, -NORTH.y] : [0, 0];
@@ -271,7 +274,7 @@ export async function buildScene(scene, make) {
   // runs north up the open ground between the rows to the square.)
   const PATHS = [
     [PLACES.landing, [14, -114], P(655, 760), P(655, 640), P(655, 470)],    // up from the landing to the square
-    [P(655, 470), P(745, 300), P(860, 262), P(990, 300)],                  // to the storehouse and the kitchen
+    [P(655, 470), [-37, -120], [-47, -122], P(860, 262), P(990, 300)],     // past the storehouse to the kitchen
     [P(655, 640), P(840, 680), P(880, 795)],                               // to the bake oven
     [P(655, 640), P(600, 690), P(545, 700)],                               // to the well
     [P(655, 470), P(560, 488), P(360, 488), [-24, -66], [-25, -40]],       // the walk south, past the cemetery, to the chapel

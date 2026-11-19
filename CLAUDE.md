@@ -87,11 +87,13 @@ own. Started 2026-11-18. Read `README.md` for the file map and `docs/SOURCES.md`
 ## Island detail (2026-11-19)
 
 - `src/island-detail.js` adds stumps, long-grass tufts (thickest on the banks), the carpenters' work yard at
-  (-38, -96), firewood behind every other cottage (shrinking through the winter), barrels, benches, a wheelbarrow,
+  (-23, -121), firewood behind every other cottage (shrinking through the winter), barrels, benches, a wheelbarrow,
   driftwood, gulls (sitting ones float at high tide; five circle) and snowdrifts. It places things clear of every
   building, garden, footpath and free-roam scene, and adds a worn door step for each house to the footpaths
   (`MAX_SEGS` in world.js is 64 for them). It adds about 27,000 triangles.
 - The ground shader adds meadow patches, a wrack line at high water, and paths trodden through snow.
+- The storehouse (C) is at `STORE_AT` beside the Swiss quarters, not Champlain's spot on the west bank (10 m of
+  slope there); the cider scene is at its door and the kitchen path runs past it.
 - The gardens were moved off the banks (`M_AT`, `L_AT`, `X_AT` in scene.js): none may sit on more than ~1.3 m of slope.
 - In free roam the shallop lies on the beach at the landing and in summer the trade canoe loops the east channel
   (`canoeLoop`); `setRoam(false)` puts both back.

@@ -76,6 +76,8 @@ How they were used:
   island's gardens (B) on the flat ground south of the houses, L is smaller and sits on the flat east of the
   lodgings, and X is a little smaller. A judgment call, not a source: no garden may sit on more than about 1.3 m of
   slope.
+- **The storehouse (C)** (2026-11-19) stands inland beside the Swiss quarters (D), facing the square. At the
+  plan's spot it hung over the west bank on 10 m of slope. A judgment call, not a source.
 - **H, Little Dochet Island:** OSM has only its name, so it is raised from the elevation tiles.
 - **The plan's orientation** is not stated. It is drawn with its top to the west, like the island map: then its
   gardens fall on the south side as the island map shows (B), and its kitchen (I) sits on the bank.
@@ -143,8 +145,8 @@ Scenery, not facts the game teaches. Two rest on sources above:
 | Tree stumps across the island's open ground: the island was cleared | NPS (table above, "cleared") |
 | The woodpiles behind the houses shrink through the winter: a shortage of firewood | NPS |
 
-The rest is ordinary scenery of the time and place, with no claim behind it: the carpenters' work yard west of their
-row (F on the plan), barrels by the storehouse, benches by some doors, a wheelbarrow by the gardens, long grass on
+The rest is ordinary scenery of the time and place, with no claim behind it: the carpenters' work yard north of the
+square, barrels by the storehouse, benches by some doors, a wheelbarrow by the gardens, long grass on
 the banks, driftwood and a line of dried rockweed at high water, gulls, snowdrifts against the houses and paths
 trodden through the snow. In free roam the shallop lies on the beach below the landing, and in summer a
 Peskotomuhkati (Passamaquoddy) canoe goes up and down the channel, as the traders' canoe does on the first stop.
