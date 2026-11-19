@@ -74,8 +74,8 @@ own. Started 2026-11-18. Read `README.md` for the file map and `docs/SOURCES.md`
 
 ## Free roam (2026-11-18)
 
-- `src/explore.js` runs it: click a building for its card (`INFO` in `src/stories.js`), click the people by a 💬
-  (or the 💬 itself) to watch a scene (`SCENES`): speech bubbles over heads, poses from people.js (`turn`, `swat`,
+- `src/explore.js` runs it: click a building for its card (`INFO` in `src/stories.js`), click the people by a gold
+  dot (or the dot itself) to watch a scene (`SCENES`): speech bubbles over heads, poses from people.js (`turn`, `swat`,
   `point`, `shiver`, `study` were added for these), props built in explore.js, the camera glides in. A Summer 1604 /
   Winter 1604-05 switch in the roam bar sets the month and which scenes show.
 - Every card and scene names its source; the words are made up, the facts are not (docs/SOURCES.md, "Free roam").
