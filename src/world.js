@@ -127,7 +127,7 @@ export function buildWorld(scene, { trees, low = false }) {
 
   // Snow lies on flat ground above the high-water line; it comes and goes with uSnow.
   // the habitation's footpaths (segments, x0 z0 x1 z1) and its trodden square (x, z, radius), set by setPaths
-  const MAX_SEGS = 48;
+  const MAX_SEGS = 64; // the footpaths and a worn door step at each house
   const groundU = { uSnow: { value: 0 }, uGreen: { value: 1 }, uHW: { value: H },
     uSeg: { value: Array.from({ length: MAX_SEGS }, () => new THREE.Vector4()) }, uSegN: { value: 0 }, uSquare: { value: new THREE.Vector3(0, 0, -1) } };
   function groundMaterial(offset = false) {
@@ -154,6 +154,13 @@ export function buildWorld(scene, { trees, low = false }) {
             // Fine meadow mottling, tidal gravel and a trodden central square.
             float grain = gn(vWPos.xz * 2.2);
             diffuseColor.rgb *= 0.86 + 0.24 * n + 0.10 * grain;
+            // the meadow in patches: longer, yellower grass, and darker clumps (2026-11-19)
+            float meadow = land * step(0.01, diffuseColor.g - diffuseColor.b);
+            diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.14, 1.07, 0.74), smoothstep(0.55, 0.78, gn(vWPos.xz * 0.11 + 7.3)) * meadow * 0.75);
+            diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.8, 0.88, 0.74), smoothstep(0.6, 0.82, gn(vWPos.xz * 0.45 + 3.1)) * meadow * 0.5);
+            // the wrack line: dried rockweed left along the top of the last high tide, broken here and there
+            float wrack = (1.0 - smoothstep(0.0, 0.3, abs(vWPos.y - uHW - 0.2))) * smoothstep(0.35, 0.6, gn(vWPos.xz * 0.7));
+            diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.2, 0.17, 0.1), wrack * 0.75);
             // the trodden square and the footpaths between the houses (scene.js lays them out)
             float d = length(vWPos.xz - uSquare.xy) - uSquare.z;
             if (abs(vWPos.x + 20.) < 140. && abs(vWPos.z + 90.) < 160.) {
@@ -167,7 +174,7 @@ export function buildWorld(scene, { trees, low = false }) {
             float worn = 1. - smoothstep(-.4, .9, d + 1.3*(n-.5) + .35*(grain-.5));
             diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.30,.216,.126) * (.76 + .36*n + .18*grain), worn * land);
             float flat_ = smoothstep(0.45, 0.8, vWNrm.y);
-            float s = clamp(uSnow * 1.4 - (1.0 - flat_) * 0.9 - n * 0.35, 0.0, 1.0) * land;
+            float s = clamp(uSnow * 1.4 - (1.0 - flat_) * 0.9 - n * 0.35, 0.0, 1.0) * land * (1.0 - worn * 0.65); // paths trodden through the snow
             diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.93, 0.95, 0.98), s);
           }`);
     };

@@ -36,6 +36,7 @@ server or GitHub Pages. `npm run build:data` rebuilds the ground from `data/raw/
 | `src/content.js` | Chapters, stops, questions, and the two-calendar text for each month |
 | `src/world.js` | Ground, water and tide, the forest, river ice, falling snow, and the seasons (`setMonth`) |
 | `src/scene.js` | The story on the river: the habitation, the ship, the trade, the camp, the March canoes; camera views |
+| `src/island-detail.js` | The island's small things: stumps, long grass, the carpenters' work yard, firewood, barrels, benches, driftwood, gulls, snowdrifts |
 | `src/french.js` | Procedural French models: ship, shallop, houses, palisade, gardens, cannon, trade goods |
 | `src/calendar.js` | The two-calendar card |
 | `src/people.js` | People, posed in code (from St. George 3D) |

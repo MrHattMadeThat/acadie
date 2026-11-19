@@ -71,6 +71,11 @@ How they were used:
   The kitchen (I), which he draws on the bank by the water, comes a little nearer the houses to stay on the bank.
   The cemetery (E), gardens (B) and chapel (F) follow his map south of the houses: E toward the west shore, B toward
   the east, F south of both.
+- **The plan's gardens L, M and X** (2026-11-19) are moved off the banks. The real island is narrower than the plan,
+  so at the plan's spots M ran down the west bank into the river and L down the east bank. M now stands with the
+  island's gardens (B) on the flat ground south of the houses, L is smaller and sits on the flat east of the
+  lodgings, and X is a little smaller. A judgment call, not a source: no garden may sit on more than about 1.3 m of
+  slope.
 - **H, Little Dochet Island:** OSM has only its name, so it is raised from the elevation tiles.
 - **The plan's orientation** is not stated. It is drawn with its top to the west, like the island map: then its
   gardens fall on the south side as the island map shows (B), and its kitchen (I) sits on the bank.
@@ -123,7 +128,23 @@ New facts these add:
 | Burials studied by archaeologists: men of about 17 to 45 | cemetery card | PC (winter) |
 
 Champlain's own words above are as the NPS and Parks Canada pages print them, translated from the 1613 French.
+
 Project Gutenberg's English *Voyages* (Otis translation) could not be reached on 2026-11-18; check the exact
 wording there before quoting him anywhere else.
 
 Not acted out, on purpose: the sickness and the deaths. The cemetery card says it plainly; no scene shows it.
+
+## The island's small things (`src/island-detail.js`, 2026-11-19)
+
+Scenery, not facts the game teaches. Two rest on sources above:
+
+| What | Source |
+|---|---|
+| Tree stumps across the island's open ground: the island was cleared | NPS (table above, "cleared") |
+| The woodpiles behind the houses shrink through the winter: a shortage of firewood | NPS |
+
+The rest is ordinary scenery of the time and place, with no claim behind it: the carpenters' work yard west of their
+row (F on the plan), barrels by the storehouse, benches by some doors, a wheelbarrow by the gardens, long grass on
+the banks, driftwood and a line of dried rockweed at high water, gulls, snowdrifts against the houses and paths
+trodden through the snow. In free roam the shallop lies on the beach below the landing, and in summer a
+Peskotomuhkati (Passamaquoddy) canoe goes up and down the channel, as the traders' canoe does on the first stop.

@@ -5,6 +5,8 @@ import * as F from './french.js';
 import { Crowd } from './people.js';
 import { heightAt, HW, season } from './world.js';
 import { CALENDAR } from './content.js';
+import { SCENES } from './stories.js';
+import { buildIslandDetail } from './island-detail.js';
 
 // Everything on the river that the story needs, built once and set for each stop and month.
 // Positions are local metres (east +x, north -z, the island at the origin). Use scripts/probe.mjs for ground heights.
@@ -293,14 +295,18 @@ export async function buildScene(scene, make) {
     parent.add(g);
     beds.push(g);
   }
-  bed(12, 21, 0, plan(392, 220), PLAN_ROT, gardens, true);
-  bed(14, 23, 0, plan(411, 755), PLAN_ROT, gardens, true);
-  bed(11, 4.5, 0, plan(748, 840), PLAN_ROT, gardens, true);
+  // Champlain's plan puts M west of the forge and L east of the lodgings, but the real island is narrower than his
+  // plan, and there both ran down the banks (M into the river: 10 m of drop across it, L 6 m). 2026-11-19 (the user:
+  // a garden on a massive slope looks off): every bed now sits where the ground drops no more than about 1.3 m across
+  // it, clear of the buildings and the footpaths. M joins the island gardens (B) on the flat ground south of the
+  // houses, L is smaller to fit the flat east of the lodgings, X is a little smaller, and two B beds moved 6 m west.
+  const M_AT = [-10.4, -57.4], L_AT = [2.2, -84.9], X_AT = [6.5, -131.5];
+  bed(12, 21, 0, M_AT, PLAN_ROT, gardens, true);
+  bed(7, 11.5, 0, L_AT, PLAN_ROT, gardens, true);
+  bed(7.7, 3.1, 0, X_AT, PLAN_ROT - .06, gardens, true);
   bed(14, 5, 0, plan(845, 654), PLAN_ROT, gardens, true);
-  for (const [x, z, w, d, r] of [[0, 0, 18, 11, .1], [20, 12, 14, 10, -.15], [6, 26, 16, 10, .05]]) {
-    bed(w, d, 7, [PLACES.islandGardens[0] + x - 8, PLACES.islandGardens[1] + z - 10], PLAN_ROT + r);
-  }
-  for (const [L, at, text] of [['M', plan(392, 220), 'more gardens'], ['L', plan(418, 755), 'gardens'], ['X', plan(748, 828), 'more gardens']]) {
+  for (const [x, z, w, d, r] of [[4, -70, 18, 11, .1], [18, -60, 9.8, 7, -.15], [4, -44, 16, 10, .05]]) bed(w, d, 7, [x, z], PLAN_ROT + r);
+  for (const [L, at, text] of [['M', M_AT, 'more gardens'], ['L', L_AT, 'gardens'], ['X', X_AT, 'more gardens']]) {
     const t = letterTag(L, text);
     t.position.set(at[0], ground(...at) + 4, at[1]);
     root.add(t);
@@ -539,8 +545,8 @@ export async function buildScene(scene, make) {
   for (const g of beds.slice(5, 8)) for (let i = 0; i < 2; i++) {
     french({ x: g.position.x + (i - 0.5) * 4, z: g.position.z + (rand() - 0.5) * 3, heading: rand() * 6, action: 'hoe', tool: 'hoe', when: (st) => onIsland(st) && isSummer(st) && st.stop !== 'leaving' });
   }
-  const lm = plan(418, 755);
-  french({ x: lm[0] + 2, z: lm[1], heading: 1, action: 'hoe', tool: 'hoe', when: (st) => onIsland(st) && isSummer(st) && st.stop !== 'leaving' });
+  const lm = beds[1].position; // L
+  french({ x: lm.x + 2, z: lm.z, heading: 1, action: 'hoe', tool: 'hoe', when: (st) => onIsland(st) && isSummer(st) && st.stop !== 'leaving' });
   const toHouses = PATHS[0]; // the boards come up the footpath from the landing
   for (let i = 0; i < 4; i++) {
     french({ x: toHouses[0][0], z: toHouses[0][1], heading: 0, action: 'shoulder', tool: 'plank', path: toHouses, speed: 1.1, offset: i * 0.25,
@@ -564,7 +570,7 @@ export async function buildScene(scene, make) {
       when: (st) => onIsland(st) && st.month >= 4 && st.month <= 10 && (i < 2 || st.month < 7.5 || st.month > 9.5) });
   }
   // the trade: Peskotomuhkati traders in the canoe beside the ship, French traders at the rail
-  const paddlers = [-1.3, 1.3].map((dx) => peskotomuhkati({ x: 0, z: 0, heading: 0, action: 'paddle', tool: 'paddle', when: (st) => st.stop === 'trade' || st.stop === 'plan', canoe: dx, scale: .86, y: f => f.deckHeight }));
+  const paddlers = [-1.3, 1.3].map((dx) => peskotomuhkati({ x: 0, z: 0, heading: 0, action: 'paddle', tool: 'paddle', when: (st) => st.stop === 'trade' || st.stop === 'plan' || (st.roam && st.season === 'summer'), canoe: dx, scale: .86, y: f => f.deckHeight }));
   const deckHands = [];
   function sailor(x, z, facing, action, options = {}) {
     deckHands.push(french({ x: 0, z: 0, heading: 0, hat: 'monmouth', action,
@@ -609,6 +615,22 @@ export async function buildScene(scene, make) {
     f.heading = Math.atan2(leg[1][0] - leg[0][0], leg[1][1] - leg[0][1]);
   }
 
+  // ---------------------------------------------------------------- the island's small things (island-detail.js)
+
+  // kept clear: the free-roam scenes, the cemetery, the landing and the spring canoes' beach
+  const keepClear = [
+    ...SCENES.map((sc) => [...(sc.world ? sc.at : plan(...sc.at)), 6]),
+    [...PLACES.cemetery, 8], [...PLACES.landing, 7], [...PLACES.marchBeach, 9],
+  ];
+  const detail = buildIslandDetail({ root, buildings, beds, others: [wellM, tree, flake, wood, planks, batteryNorth], pathSegs, square: squareWorn,
+    spots: keepClear, rand, PLAN_ROT });
+
+  // free roam: the shallop drawn up on the beach below the landing (afloat when the tide is in), and in summer a
+  // Peskotomuhkati canoe going up and down the channel east of the island
+  const beachAt = [PLACES.landing[0] + 2, PLACES.landing[1] - 1];
+  const canoeLoop = { cx: 125, cz: -170, rx: 25, rz: 170, speed: 1.4 };
+  let canoeA = 0;
+
   // ---------------------------------------------------------------- state
 
   const picks = ['pelts', 'trade_kettle', 'axe', 'cloth', 'storehouse', 'gardens', 'palisade', 'battery_north', 'battery_south'];
@@ -651,6 +673,7 @@ export async function buildScene(scene, make) {
       crown.material.color.set(leaf > .55 ? '#719344' : '#ae844a');
     }
     if (st.stop === 'winter') ship.visible = m < 3 || m > 11;
+    detail.setMonth(m);
     for (const f of crowd.list) f.hidden = !f.when(st);
   }
 
@@ -736,7 +759,11 @@ export async function buildScene(scene, make) {
       root, crowd, french, peskotomuhkati, plan, ground, PLACES, glow,
       targets: [...buildings, wellM, tree, ...beds, ...crosses, batterySouth, batteryNorth, flake, wood, mill, charcoal, ship, camp],
       // roam: on or off; season: 'summer' or 'winter' (who shows is decided again on the next setMonth)
-      setRoam(on, season) { st.roam = on; st.season = season; },
+      setRoam(on, season) {
+        st.roam = on; st.season = season;
+        tradeCanoe.visible = on ? season === 'summer' : st.stop === 'trade' || st.stop === 'plan';
+        if (!on) { placeBoats(); shallopHome.copy(shallop.position); }
+      },
       get state() { return st; },
     },
     setStop,
@@ -760,6 +787,20 @@ export async function buildScene(scene, make) {
         shallop.rotation.y = Math.atan2(shallopHome.x - shallopShore.x, shallopHome.z - shallopShore.z) - Math.PI / 2;
       } else shallop.position.copy(shallopHome);
       shallop.position.y = tide + Math.sin(t * 0.8 + 2) * 0.06;
+      if (st.roam) {
+        // drawn up at the landing: she settles on the beach as the tide goes out
+        shallop.position.set(beachAt[0], Math.max(tide + Math.sin(t * 0.8 + 2) * 0.04, heightAt(...beachAt) + 0.12), beachAt[1]);
+        shallop.rotation.y = 0.35;
+        if (tradeCanoe.visible) {
+          const L = canoeLoop;
+          canoeA += (L.speed / Math.hypot(L.rx * Math.sin(canoeA), L.rz * Math.cos(canoeA))) * dt;
+          const dx = -L.rx * Math.sin(canoeA), dz = L.rz * Math.cos(canoeA);
+          tradeCanoe.position.x = L.cx + L.rx * Math.cos(canoeA);
+          tradeCanoe.position.z = L.cz + L.rz * Math.sin(canoeA);
+          tradeCanoe.rotation.y = Math.atan2(-dz, dx) + Math.PI; // the paddlers face her -x
+        }
+      }
+      detail.update(dt, t, tide);
       mill.userData.wheel.rotation.z -= dt * 0.8;
       for (const s of smokes) s(dt);
       stepDismantle(dt);

@@ -522,14 +522,20 @@ body.roaming :is(#panel,#chapter-index) { display: none; }
 }
 .bubble::after { content: ''; position: absolute; left: 50%; bottom: -8px; margin-left: -8px; border: 8px solid transparent; border-top-color: #fffdf6; border-bottom: 0; }
 .bubble b { display: block; font-size: 12px; color: var(--purple); }
-/* the marker over a scene's people */
+/* the marker over a scene's people: a small dot, which opens into the scene's name when the mouse is on the dot or on
+   the people (explore.js adds .open), or when it has keyboard focus. One box at a time, never two. */
 .tag.scene-mark {
   pointer-events: auto; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 6px; font-size: 13px;
   color: var(--frame-text); background: var(--paint-grain), var(--frame-face);
   border: 2px solid; border-color: var(--frame-light) var(--frame-shade) var(--frame-shade) var(--frame-wood);
 }
 .tag.scene-mark b { font-size: 15px; }
-.tag.scene-mark:hover, .tag.scene-mark:focus-visible { color: var(--gold); }
+.tag.scene-mark:not(:hover):not(:focus-visible):not(.open) {
+  width: 22px; height: 22px; padding: 0; gap: 0; border: 0; box-shadow: none;
+  background: radial-gradient(circle, var(--gold) 0 4px, var(--frame-ink) 4.5px 6px, transparent 6.5px);
+}
+.tag.scene-mark:not(:hover):not(:focus-visible):not(.open) > * { display: none; }
+.tag.scene-mark:is(:hover, :focus-visible, .open) { color: var(--gold); z-index: 2; }
 @media (max-width: 820px) {
   .explore { left: 8px; right: 8px; top: auto; bottom: 120px; width: auto; max-height: 45vh; }
   #roam-tools span { display: none; }

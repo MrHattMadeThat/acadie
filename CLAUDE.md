@@ -81,6 +81,20 @@ own. Started 2026-11-18. Read `README.md` for the file map and `docs/SOURCES.md`
 - Every card and scene names its source; the words are made up, the facts are not (docs/SOURCES.md, "Free roam").
   Nothing about the sickness is acted out.
 - Console: `acadie.explore.season('winter')`, `acadie.explore.play('cider')`.
+- Scene markers are small dots; the dot opens into the 💬 name when the mouse is on it or on the scene's people
+  (`.open`, set in explore.js). The cursor tip is only for buildings, so a name never shows twice.
+
+## Island detail (2026-11-19)
+
+- `src/island-detail.js` adds stumps, long-grass tufts (thickest on the banks), the carpenters' work yard at
+  (-38, -96), firewood behind every other cottage (shrinking through the winter), barrels, benches, a wheelbarrow,
+  driftwood, gulls (sitting ones float at high tide; five circle) and snowdrifts. It places things clear of every
+  building, garden, footpath and free-roam scene, and adds a worn door step for each house to the footpaths
+  (`MAX_SEGS` in world.js is 64 for them). It adds about 27,000 triangles.
+- The ground shader adds meadow patches, a wrack line at high water, and paths trodden through snow.
+- The gardens were moved off the banks (`M_AT`, `L_AT`, `X_AT` in scene.js): none may sit on more than ~1.3 m of slope.
+- In free roam the shallop lies on the beach at the landing and in summer the trade canoe loops the east channel
+  (`canoeLoop`); `setRoam(false)` puts both back.
 
 ## Open items
 

@@ -327,6 +327,14 @@ export function buildExplore({ story, camera, controls, renderer, setMonth, onFo
     return best;
   }
 
+  let openSc = null;
+  function openMark(sc) {
+    if (sc === openSc) return;
+    openSc?.mark.element.classList.remove('open');
+    sc?.mark.element.classList.add('open');
+    openSc = sc;
+  }
+
   let downAt = null, lastMove = 0;
   const canvas = renderer.domElement;
   canvas.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
@@ -345,12 +353,14 @@ export function buildExplore({ story, camera, controls, renderer, setMonth, onFo
     lastMove = now;
     const sc = hitScene(e);
     const id = sc ? null : hitInfo(e);
-    const text = sc ? `💬 ${sc.title}` : id ? INFO[id].title : '';
-    canvas.style.cursor = text ? 'pointer' : '';
+    // near a scene's people its dot opens into the name; the cursor tip is only for buildings, so nothing shows twice
+    openMark(sc);
+    const text = id ? INFO[id].title : '';
+    canvas.style.cursor = sc || text ? 'pointer' : '';
     tip.hidden = !text;
     if (text) { tip.textContent = text; tip.style.transform = `translate(${e.clientX + 14}px, ${e.clientY + 12}px)`; }
   });
-  canvas.addEventListener('pointerleave', () => { tip.hidden = true; });
+  canvas.addEventListener('pointerleave', () => { tip.hidden = true; openMark(null); });
   addEventListener('keydown', (e) => { if (on && e.key === 'Escape' && !card.hidden) closeCard(); });
 
   // ---------------------------------------------------------------- seasons
@@ -376,6 +386,7 @@ export function buildExplore({ story, camera, controls, renderer, setMonth, onFo
       stopScene();
       card.hidden = true;
       tip.hidden = true;
+      openMark(null);
       glide = null;
       X.setRoam(false, null);
       for (const sc of SCENES) { sc.group.visible = false; sc.mark.visible = false; }
