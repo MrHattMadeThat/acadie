@@ -78,8 +78,16 @@
 
     <nav id="roam-tools" class="paint-box" aria-label="Free roam controls" hidden>
       <button id="roam-back" class="paint-button" type="button">Back to title</button>
-      <span>Drag to look around. Use two fingers or right-drag to pan. Pinch or scroll to zoom.</span>
+      <div class="seasons" role="group" aria-label="Season">
+        <button type="button" data-season="summer" aria-pressed="true">Summer 1604</button>
+        <button type="button" data-season="winter" aria-pressed="false">Winter 1604&ndash;05</button>
+      </div>
+      <span>Click a building, or the people by a &#128172;, to see what happened there. Drag to look, right-drag to pan, scroll to zoom.</span>
     </nav>
+
+    <!-- free roam: a building's story, or a scene as it plays (explore.js) -->
+    <aside id="explore" class="explore" hidden></aside>
+    <div id="explore-tip" class="explore-tip" hidden></div>
 
     <p id="opening-line" class="dawn-line" aria-live="polite"></p>
     <button id="skip" class="btn-ghost skip" type="button" hidden>Skip &#8250;</button>

@@ -6,6 +6,7 @@ import { loadWorldData, buildWorld, heightAt } from './world.js';
 import { loadManifest, makeModel } from './models.js';
 import { buildScene, VIEWS } from './scene.js';
 import { buildCalendar } from './calendar.js';
+import { buildExplore } from './explore.js';
 import { renderTask, clearTask } from './tasks.js';
 import '@fontsource-variable/fraunces';
 import '@fontsource/atkinson-hyperlegible/400.css';
@@ -72,6 +73,7 @@ const data = await loadWorldData();
 const world = buildWorld(scene, { trees: data.trees, low });
 await loadManifest();
 const story = await buildScene(scene, makeModel);
+world.setPaths(story.paths.segs, story.paths.square);
 
 const pose = (v) => {
   const eye = V(v.eye), look = V(v.look);
@@ -83,6 +85,8 @@ const poses = STOPS.map((s) => pose(VIEWS[s.id]));
 // The calendar card, for stops that show it. Moving the slider turns the whole river through the year.
 const calendar = buildCalendar($('calendar'), (m) => { world.setMonth(m); story.setMonth(m); });
 function setMonth(m) { world.setMonth(m); story.setMonth(m); calendar.set(m); }
+// free roam's clickable buildings, scenes and seasons
+const explore = buildExplore({ story, camera, controls, renderer, setMonth, onFocus: (v) => world.setFocus(v) });
 
 // ------------------------------------------------------------------ progress
 
@@ -376,10 +380,11 @@ renderer.domElement.addEventListener('pointerdown', (e) => { downAt = [e.clientX
 renderer.domElement.addEventListener('pointerup', (e) => {
   if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 6) return;
   const name = pickAt(e);
-  if (name && controller) controller.pick(name);
+  if (name && controller && !explore.on) controller.pick(name);
 });
 renderer.domElement.addEventListener('pointermove', (e) => {
   if (e.buttons) return;
+  if (explore.on) return; // free roam sets its own cursor
   renderer.domElement.style.cursor = controller && pickAt(e) ? 'pointer' : '';
 });
 
@@ -483,7 +488,7 @@ let mapShown = null;
 // island map his north is about 27 degrees off true north (scripts/champlain-fit.mjs), so that view turns with it.
 const MAP_VIEWS = {
   map: { look: [5, 0, -40], up: [-0.889, -0.459], dist: 400, height: 560 },
-  plan: { look: [-25, 9, -118], up: [-0.974, 0.226], dist: 40, height: 175 },
+  plan: { look: [-23.5, 9, -111.5], up: [-0.974, 0.226], dist: 40, height: 185 }, // the middle of the habitation (plan() in scene.js)
 };
 let mapReturn = null, glide = null;
 function glideTo(eye, look) {
@@ -555,7 +560,7 @@ $('roam').onclick = () => {
   $('roam-tools').hidden = false;
   const island = STOPS.find(s => s.id === 'island');
   story.setStop(island.id, island.month);
-  setMonth(island.month);
+  explore.start(); // summer 1604, and the season switch
   world.setEvening(0);
   const view = pose(VIEWS.island);
   camera.position.copy(view.eye);
@@ -576,6 +581,7 @@ controls.addEventListener('change', () => {
   if (controls.enablePan) world.setFocus(controls.target);
 });
 roamBack.onclick = () => {
+  explore.stop();
   controls.stopListenToKeyEvents();
   orbitSurface.removeAttribute('tabindex');
   orbitSurface.removeAttribute('aria-label');
@@ -645,10 +651,11 @@ renderer.setAnimationLoop(() => {
   } else controls.update();
   // the tide runs faster on the calendar, so the ice can be seen moving
   world.tick(t, dt, camera, STOPS[current]?.calendar && !travel ? 4 : 1);
+  explore.update(dt, t);
   story.update(dt, t, world.tide(), camera);
   renderer.render(scene, camera);
   labels.render(scene, camera);
 });
 
 // for checks in the browser console
-window.acadie = { renderer, scene, goTo, arrive, setMonth, story, world, poses, camera, controls, render: () => renderer.render(scene, camera), get current() { return current; }, get save() { return save; } };
+window.acadie = { renderer, scene, explore, goTo, arrive, setMonth, story, world, poses, camera, controls, render: () => renderer.render(scene, camera), get current() { return current; }, get save() { return save; } };

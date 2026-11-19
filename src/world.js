@@ -126,7 +126,10 @@ export function buildWorld(scene, { trees, low = false }) {
   // ---------------------------------------------------------------- ground
 
   // Snow lies on flat ground above the high-water line; it comes and goes with uSnow.
-  const groundU = { uSnow: { value: 0 }, uGreen: { value: 1 }, uHW: { value: H } };
+  // the habitation's footpaths (segments, x0 z0 x1 z1) and its trodden square (x, z, radius), set by setPaths
+  const MAX_SEGS = 48;
+  const groundU = { uSnow: { value: 0 }, uGreen: { value: 1 }, uHW: { value: H },
+    uSeg: { value: Array.from({ length: MAX_SEGS }, () => new THREE.Vector4()) }, uSegN: { value: 0 }, uSquare: { value: new THREE.Vector3(0, 0, -1) } };
   function groundMaterial(offset = false) {
     const m = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95,
       polygonOffset: offset, polygonOffsetFactor: offset ? -1 : 0, polygonOffsetUnits: offset ? -2 : 0 });
@@ -137,7 +140,7 @@ export function buildWorld(scene, { trees, low = false }) {
         .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWPos = (modelMatrix * vec4(transformed, 1.0)).xyz; vWNrm = normalize(mat3(modelMatrix) * objectNormal);');
       sh.fragmentShader = sh.fragmentShader
         .replace('#include <common>', `#include <common>
-          varying vec3 vWPos; varying vec3 vWNrm; uniform float uSnow, uGreen, uHW;
+          varying vec3 vWPos; varying vec3 vWNrm; uniform float uSnow, uGreen, uHW; uniform vec4 uSeg[${MAX_SEGS}]; uniform int uSegN; uniform vec3 uSquare;
           float gh(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
           float gn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
             return mix(mix(gh(i), gh(i+vec2(1,0)), f.x), mix(gh(i+vec2(0,1)), gh(i+vec2(1,1)), f.x), f.y); }`)
@@ -151,11 +154,17 @@ export function buildWorld(scene, { trees, low = false }) {
             // Fine meadow mottling, tidal gravel and a trodden central square.
             float grain = gn(vWPos.xz * 2.2);
             diffuseColor.rgb *= 0.86 + 0.24 * n + 0.10 * grain;
-            vec2 delta = vWPos.xz - vec2(-25., -118.); // the habitation's square (PLAN.at in scene.js)
-            vec2 court = vec2(dot(delta, vec2(-.226,-.974)), dot(delta,vec2(.974,-.226)));
-            float yard = max(abs(court.x - 2.) - 8.2, abs(court.y + 1.) - 18.);
-            float lane = max(abs(court.x - 1.) - 1.4, abs(court.y - 19.) - 14.);
-            float worn = 1. - smoothstep(-.6, 1.5, min(yard,lane) + 1.6*(n-.5));
+            // the trodden square and the footpaths between the houses (scene.js lays them out)
+            float d = length(vWPos.xz - uSquare.xy) - uSquare.z;
+            if (abs(vWPos.x + 20.) < 140. && abs(vWPos.z + 90.) < 160.) {
+              for (int i = 0; i < ${MAX_SEGS}; i++) {
+                if (i >= uSegN) break;
+                vec2 a = uSeg[i].xy, b = uSeg[i].zw, pa = vWPos.xz - a, ba = b - a;
+                float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-4), 0., 1.);
+                d = min(d, length(pa - ba * h) - .75);
+              }
+            }
+            float worn = 1. - smoothstep(-.4, .9, d + 1.3*(n-.5) + .35*(grain-.5));
             diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.30,.216,.126) * (.76 + .36*n + .18*grain), worn * land);
             float flat_ = smoothstep(0.45, 0.8, vWNrm.y);
             float s = clamp(uSnow * 1.4 - (1.0 - flat_) * 0.9 - n * 0.35, 0.0, 1.0) * land;
@@ -445,6 +454,12 @@ export function buildWorld(scene, { trees, low = false }) {
     get month() { return state.month; },
     setEvening(e) { state.evening = e; applyLight(); },
     setFocus(v) { focus.copy(v); applyLight(); },
+    /** footpaths worn into the ground: segs [[x0, z0, x1, z1], ...], square [x, z, radius] */
+    setPaths(segs, square) {
+      segs.slice(0, MAX_SEGS).forEach((g, i) => groundU.uSeg.value[i].set(...g));
+      groundU.uSegN.value = Math.min(segs.length, MAX_SEGS);
+      groundU.uSquare.value.set(...square);
+    },
     tide: () => state.tide,
     sun,
     tick(t, dt, camera, tideSpeed = 1) {

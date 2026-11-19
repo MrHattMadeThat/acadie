@@ -163,24 +163,6 @@ export const STOPS = [
         explain: 'Water all around made it easy to defend, and the sea was close for the ships. Nobody was thinking about winter yet.',
       },
       {
-        type: 'match',
-        prompt: 'Find these on Champlain’s plan. What was each one for?',
-        items: [
-          { id: 'storehouse', label: 'The storehouse', pick: 'storehouse', answer: 'store' },
-          { id: 'garden', label: 'The gardens', pick: 'gardens', answer: 'garden' },
-          { id: 'palisade', label: 'The palisade', pick: 'palisade', answer: 'palisade' },
-          { id: 'cannon', label: 'The cannon platform', pick: 'battery_north', answer: 'cannon' },
-        ],
-        choices: [
-          { id: 'store', label: 'Kept the food and supplies' },
-          { id: 'garden', label: 'Grew vegetables' },
-          { id: 'palisade', label: 'A wall of pointed stakes, for defence' },
-          { id: 'cannon', label: 'Guarded the river from ships' },
-        ],
-        // The cannon: D on Champlain's island map, a platform at the north end.
-        explain: 'Everything was built to keep the colony safe and fed, the French way. Notice what is missing: nothing here is about getting through a winter.',
-      },
-      {
         type: 'choice',
         // Champlain's map of the island (1613): C, a little islet used as a platform for the cannon; D, a platform
         // where cannon were put. NPS also describes the fortified islet.

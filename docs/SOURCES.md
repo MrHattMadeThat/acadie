@@ -22,6 +22,11 @@ come from:
 | "Rivière des Etechemins" (P on the map): the Etechemin were ancestors of today's Passamaquoddy | the map viewer's note | The Canadian Encyclopedia |
 | Port Royal's habitation stood on the Annapolis Basin, at about 44.71° N, 65.61° W | the Port Royal markers on the two map questions | Parks Canada, Port-Royal National Historic Site |
 
+Still to check (2026-11-18): the National Park Service's "Saint Croix Island Settlement" page puts the trade of
+fresh meat for French bread at Port Royal, the next winter, not at St. Croix in March 1605. The March question and
+the calendar card cite other sources for March 1605 (see the `neighbours` stop in `content.js`); confirm in
+Champlain's *Voyages* which winter it was.
+
 Still to confirm against a primary source: the exact dates of first snow and first ice (Champlain's *Voyages*),
 and whether the March 1605 visitors are best called Passamaquoddy or Etchemin (the sources use both).
 
@@ -82,3 +87,41 @@ How they were used:
 The birch canoe, wigwam, fish rack, shore rocks, driftwood, paddle and porpoise models were copied from the Open
 Path (`wabanaki-wampum-review/public/models`) on 2026-11-18. Everything French (ship, shallop, buildings,
 palisade, gardens, cannon, trade goods) is a procedural stand-in in `src/french.js`.
+
+## Free roam: building cards and scenes (`src/stories.js`, 2026-11-18)
+
+In free roam, students click a building for a short card, or click people to watch a little scene with speech
+bubbles. **The words people say are made up; the facts under them are not.** Each card and scene names its source
+in the game. Short names:
+
+| Short name | Source |
+|---|---|
+| PLAN | Champlain's plan of the habitation (1613), letters as labelled by Parks Canada, "A French Colony in Acadie" (parks.canada.ca/lhn-nhs/nb/stcroix/culture/colonie-colony) |
+| MAP | Champlain's map of the island (1613), as labelled by Parks Canada, "A Place to Settle" (parks.canada.ca/lhn-nhs/nb/stcroix/culture/etablir-settle) |
+| NPS | National Park Service, "Saint Croix Island Settlement" (nps.gov/articles/000/saint-croix-island-settlement.htm) |
+| NPSH | National Park Service, "Saint Croix Island: Historical Context" (nps.gov/articles/000/saint-croix-island-historical-context.htm) |
+| PC | Parks Canada, Saint Croix Island International Historic Site, "Culture and history" pages (colony, settle, winter) |
+| READ | the class reading, *The Island* |
+
+New facts these add:
+
+| Fact | Where | Source |
+|---|---|---|
+| The men first made a little islet ready to defend "in a very short time," though the mosquitoes gave them "great annoyance" (Champlain, quoted) | scene "Mosquitoes!", the south battery card | NPS |
+| Some buildings came from France as ready-made frames | scene "Frames from France", carpenters card | PC (colony) |
+| Grinding wheat with the hand mill "gave much trouble and labour ... a painful task" (Champlain, as Parks Canada gives it) | scene "The hand mill", oven card | PC (colony) |
+| Champlain mapped the inlets and harbours of the coast in summer 1604, back around the end of September | scene "Champlain's maps", his house card | NPS |
+| At low tide, plenty of shellfish around the settlement: clams, mussels, sea urchins, snails (Champlain) | scene "Low tide" | PC (settle) |
+| The Passamaquoddy hunted seal and porpoise, fished, made maple sugar; their name for the island is thought to be Muttoneguis | scene "Fish drying in the sun", camp card | NPSH |
+| The cider froze and was given out by the pound; the men drank Spanish wine and melted snow | scenes "Cider by the pound", "Snow for water"; storehouse and well cards | NPS |
+| The river filled with ice cakes; nobody could cross; a shortage of drinking water and firewood | scenes "The ice", "Snow for water"; woodpile card | NPS |
+| The 79 who wintered included noblemen, artisans, labourers, Catholic and Protestant clerics, surgeons and soldiers | Swiss quarters card | PC (colony) |
+| A Catholic priest and a Protestant minister; a sizeable number of Huguenots | priest's house card | NPS |
+| Five ships; left France in March 1604; Passamaquoddy Bay at the end of June | ship card | NPS |
+| Burials studied by archaeologists: men of about 17 to 45 | cemetery card | PC (winter) |
+
+Champlain's own words above are as the NPS and Parks Canada pages print them, translated from the 1613 French.
+Project Gutenberg's English *Voyages* (Otis translation) could not be reached on 2026-11-18; check the exact
+wording there before quoting him anywhere else.
+
+Not acted out, on purpose: the sickness and the deaths. The cemetery card says it plainly; no scene shows it.

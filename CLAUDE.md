@@ -54,8 +54,10 @@ own. Started 2026-11-18. Read `README.md` for the file map and `docs/SOURCES.md`
 - **The island's shape (round 3):** `data/island-trace.png` (mid-tide shore traced from air photos, 1 m a pixel,
   origin -160,-250) plus OSM's island outline (= low water) make the island in `build-terrain.mjs` ("St. Croix
   Island, at 1 m"). High tide cuts off both islets, half tide bares the spit and the rock ledge, low tide joins it
-  all. `public/data/inset-kind.bin` marks sand and rock for the ground colours. The habitation's centre (PLAN.at,
-  -25,-118) is repeated in main.js (MAP_VIEWS.plan) and world.js (the worn square): change all three together.
+  all. `public/data/inset-kind.bin` marks sand and rock for the ground colours. The habitation is spread a little
+  along the island (2026-11-18: `PLAN.along` 0.13 m a plan pixel from plan x 900, across it stays 0.1), each
+  building nudged and turned a touch (`jitter` in scene.js). Its middle is repeated in main.js (MAP_VIEWS.plan). The
+  footpaths and the trodden square are `PATHS` in scene.js, drawn by the ground shader through `world.setPaths`.
 - Vite's dev server can serve a stale `meta.json` next to a new `inset.bin` after `npm run build:data`, which
   stretches the island. Reload with the cache bypassed.
 - **Champlain's maps (1613)** button: a card with both maps; while one is open, his letters show on the 3D scene
@@ -67,6 +69,16 @@ own. Started 2026-11-18. Read `README.md` for the file map and `docs/SOURCES.md`
 - The ice: each floe has its own free stretch of river (`lo`/`hi`) and stops at land instead of riding over it.
 - On the last stop the ship comes in close to the landing (`shipLoading`), in water deep enough to float at low tide
   (the bed drops steeply off the island now, so grounding there would leave her hanging over water).
+
+## Free roam (2026-11-18)
+
+- `src/explore.js` runs it: click a building for its card (`INFO` in `src/stories.js`), click the people by a 💬
+  (or the 💬 itself) to watch a scene (`SCENES`): speech bubbles over heads, poses from people.js (`turn`, `swat`,
+  `point`, `shiver`, `study` were added for these), props built in explore.js, the camera glides in. A Summer 1604 /
+  Winter 1604-05 switch in the roam bar sets the month and which scenes show.
+- Every card and scene names its source; the words are made up, the facts are not (docs/SOURCES.md, "Free roam").
+  Nothing about the sickness is acted out.
+- Console: `acadie.explore.season('winter')`, `acadie.explore.play('cider')`.
 
 ## Open items
 

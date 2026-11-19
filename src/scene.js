@@ -41,14 +41,18 @@ export const PLACES = {
 };
 
 // The plan of the habitation: plan pixels (the 1308 px scan) to world metres. The plan's right is north along the
-// island, its bottom is east. 0.1 m a pixel makes the compound about 65 m by 78 m. It sits where the island is wide
-// enough for it, just south of the narrow north end (the north end itself is only 30-60 m across).
-const PLAN = { cx: 632, cy: 500, scale: 0.1, at: [-25, -118] };
+// island, its bottom is east. It sits where the island is wide enough for it, just south of the narrow north end
+// (the north end itself is only 30-60 m across).
+// Across the island (east-west) it is 0.1 m a pixel: the island is no wider. Along the island it is spread a little
+// (2026-11-18, the user: room to walk between the buildings, less bunched at the north end): 0.13 m a pixel, measured
+// from plan x = 900 so the north end stays where it was and the rest opens out to the south. That makes the compound
+// about 65 m across and 90 m long, with a walkway between houses that touched on the plan.
+const PLAN = { cx: 632, cy: 500, scale: 0.1, along: 0.13, pin: 900, at: [-25, -118] };
 const NORTH = new THREE.Vector2(-0.226, -0.974).normalize();
 const EAST = new THREE.Vector2(-NORTH.y, NORTH.x); // (0.974, -0.226)
 const PLAN_ROT = Math.atan2(-NORTH.y, NORTH.x); // turns a model's +x to north and its +z (its front) to east
 function plan(px, py) {
-  const u = (px - PLAN.cx) * PLAN.scale, v = (py - PLAN.cy) * PLAN.scale;
+  const u = (PLAN.pin - PLAN.cx) * PLAN.scale + (px - PLAN.pin) * PLAN.along, v = (py - PLAN.cy) * PLAN.scale;
   return [PLAN.at[0] + u * NORTH.x + v * EAST.x, PLAN.at[1] + u * NORTH.y + v * EAST.y];
 }
 
@@ -189,11 +193,19 @@ export async function buildScene(scene, make) {
     // narrower than his, so it stands a little nearer the houses (plan 1020, 350 rather than 1128, 205), on the bank.
     ['I', 'kitchen', 1020, 350, () => F.hall({ w: 6, d: 5, h: 2.8, name: 'kitchen', chimneyAt: 0.25 }), [6, 5], Math.PI / 2, 'the kitchen'],
   ];
+  // Champlain drew everything square and in line. Real builders weren't so tidy: each building is nudged up to
+  // 0.6 m and turned up to 3 degrees, the same way every time (from its letter), so the place looks lived in.
+  const jitter = (letter, k) => { const v = Math.sin(letter.charCodeAt(0) * 12.9898 + k * 78.233) * 43758.5453; return (v - Math.floor(v)) * 2 - 1; };
   for (const [letter, name, px, py, makeIt, [w, d], turn, what] of H) {
     const b = makeIt();
     b.name = name;
-    const [x, z] = plan(px, py);
-    settle(b, x, z, PLAN_ROT + turn, w, d);
+    b.userData.info = name;
+    const [x0, z0] = plan(px, py);
+    const shore = letter === 'C' || letter === 'I'; // these two stand on the bank already: don't push them nearer the water
+    // P stood hard against the row Q on the plan (the island is no wider, so across it nothing spreads): 1.5 m east
+    const [ex, ez] = letter === 'P' ? [EAST.x * 1.5, EAST.y * 1.5] : [0, 0];
+    const x = x0 + ex + jitter(letter, 1) * (shore ? 0.2 : 0.6), z = z0 + ez + jitter(letter, 2) * (shore ? 0.2 : 0.6);
+    settle(b, x, z, PLAN_ROT + turn + jitter(letter, 3) * 0.05, w, d);
     hab.add(b);
     buildings.push(b);
     b.userData.letter = letter;
@@ -219,6 +231,8 @@ export async function buildScene(scene, make) {
   }
   const wellM = await make('well');
   place(wellM, ...plan(528, 705), 0, hab);
+  wellM.userData.info = 'well';
+  tree.userData.info = 'square';
   const palisade = new THREE.Group();
   palisade.name = 'palisade';
   hab.add(palisade);
@@ -230,6 +244,23 @@ export async function buildScene(scene, make) {
     root.add(t);
     letters.plan.push(t);
   }
+  // Footpaths worn into the ground between the houses (world.js draws them; main.js hands them over). Champlain's plan
+  // shows none: these are where people would walk, from the landing up to the square and out to the storehouse, the
+  // kitchen, the well, the oven, and south to the chapel and the gardens.
+  const P = (px, py) => plan(px, py);
+  // (P is the plan: x runs north along the island, y runs east. The landing path climbs between V and T, then
+  // runs north up the open ground between the rows to the square.)
+  const PATHS = [
+    [PLACES.landing, [14, -114], P(655, 760), P(655, 640), P(655, 470)],    // up from the landing to the square
+    [P(655, 470), P(745, 300), P(860, 262), P(990, 300)],                  // to the storehouse and the kitchen
+    [P(655, 640), P(840, 680), P(880, 795)],                               // to the bake oven
+    [P(655, 640), P(600, 690), P(545, 700)],                               // to the well
+    [P(655, 470), P(560, 488), P(360, 488), [-24, -66], [-25, -40]],       // the walk south, past the cemetery, to the chapel
+    [[-24, -66], [2, -62]],                                                // to the gardens on the island
+  ];
+  const pathSegs = PATHS.flatMap((line) => line.slice(1).map((b, k) => [...line[k], ...b]));
+  const squareWorn = [...P(655, 445), 7];
+
   // gardens: M (the big formal one), L (four plots), X (two small ones), and B on the island map, south of the houses
   const gardens = new THREE.Group();
   gardens.name = 'gardens';
@@ -241,6 +272,7 @@ export async function buildScene(scene, make) {
     const g = F.garden(w, d, rows, relief, formal);
     g.position.set(x, base, z);
     g.rotation.y = angle;
+    g.userData.info = parent === gardens ? 'gardens' : 'gardens_mainland';
     parent.add(g);
     beds.push(g);
   }
@@ -265,6 +297,7 @@ export async function buildScene(scene, make) {
   settle(chap, ...PLACES.chapel, PLAN_ROT, 7, 4.5);
   root.add(chap);
   chap.userData.order = 3;
+  chap.userData.info = 'chapel';
   buildings.push(chap);
   const crosses = [];
   for (let i = 0; i < 35; i++) {
@@ -275,6 +308,7 @@ export async function buildScene(scene, make) {
     c.position.set(x, ground(x, z) - 0.05, z);
     c.rotation.y = PLAN_ROT + Math.PI / 2 + (rand() - 0.5) * 0.1;
     c.visible = false;
+    c.userData.info = 'cemetery';
     root.add(c);
     crosses.push(c);
   }
@@ -285,10 +319,14 @@ export async function buildScene(scene, make) {
   batteryNorth.name = 'battery_north';
   place(batteryNorth, ...PLACES.batteryNorth, 0.2, root); // guns facing north, up the river
   batteryNorth.position.y -= 0.3;
+  batterySouth.userData.info = 'battery_south';
+  batteryNorth.userData.info = 'battery_north';
   const flake = F.codFlake(5);
   place(flake, ...PLACES.flake, 0.4, root);
+  flake.userData.info = 'flake';
   const wood = F.woodpile(1.6);
   place(wood, ...plan(980, 380), PLAN_ROT, root);
+  wood.userData.info = 'woodpile';
   const planks = F.plankPile(8);
   place(planks, PLACES.landing[0] - 6, PLACES.landing[1] - 4, PLAN_ROT, root);
 
@@ -312,8 +350,10 @@ export async function buildScene(scene, make) {
   // the mainland: the mill (I), the charcoal place (L), gardens west (M) and east (N)
   const mill = F.waterMill();
   place(mill, ...PLACES.mill, 2.2, root);
+  mill.userData.info = 'mill';
   const charcoal = F.charcoalMound();
   place(charcoal, ...PLACES.charcoal, 0, root);
+  charcoal.userData.info = 'charcoal';
   smokes.push(Object.assign(smoke(root, [PLACES.charcoal[0], ground(...PLACES.charcoal) + 1.8, PLACES.charcoal[1]], { size: 3, count: 14 }), { kind: 'charcoal' }));
   bed(22, 14, 8, PLACES.gardensWest, .3, root);
   bed(20, 14, 7, PLACES.gardensEast, -.2, root);
@@ -338,6 +378,7 @@ export async function buildScene(scene, make) {
   const ship = await make('ship');
   ship.position.set(PLACES.ship[0], 0, PLACES.ship[1]);
   ship.rotation.y = -1.9; // bow upriver, to the north-north-west
+  ship.userData.info = 'ship';
   root.add(ship);
   const fittings = F.deckFittings(ship.userData.source === 'glb');
   fittings.position.y = ship.userData.deckY + (ship.userData.source === 'glb' ? 0 : .075);
@@ -397,6 +438,7 @@ export async function buildScene(scene, make) {
 
   const camp = new THREE.Group();
   camp.name = 'summer_camp';
+  camp.userData.info = 'camp';
   root.add(camp);
   const [cx, cz] = PLACES.camp;
   for (const [x, z, r] of [[0, 0, 0], [9, 6, 1], [-7, 9, 2], [3, 15, 0.5]]) place(await make('wigwam'), cx + x, cz + z, r, camp);
@@ -491,11 +533,17 @@ export async function buildScene(scene, make) {
   }
   const lm = plan(418, 755);
   french({ x: lm[0] + 2, z: lm[1], heading: 1, action: 'hoe', tool: 'hoe', when: (st) => onIsland(st) && isSummer(st) && st.stop !== 'leaving' });
-  const toHouses = [PLACES.landing, [PLACES.landing[0] - 18, PLACES.landing[1] - 6], at(900, 600, 4, 0), at(700, 470)];
+  const toHouses = PATHS[0]; // the boards come up the footpath from the landing
   for (let i = 0; i < 4; i++) {
     french({ x: toHouses[0][0], z: toHouses[0][1], heading: 0, action: 'shoulder', tool: 'plank', path: toHouses, speed: 1.1, offset: i * 0.25,
       when: (st) => onIsland(st) && st.month < 2.5 && st.stop !== 'leaving' });
   }
+  // people coming and going on the footpaths in summer: water from the well, baskets to the oven, a pair walking south
+  const onPath = (st) => onIsland(st) && isSummer(st) && st.stop !== 'leaving';
+  french({ x: 0, z: 0, heading: 0, action: 'walk', tool: 'bucket', path: PATHS[3], speed: 1.0, offset: 0.1, hat: 'monmouth', when: onPath });
+  french({ x: 0, z: 0, heading: 0, action: 'walk', tool: 'basket', path: PATHS[2], speed: 0.9, offset: 0.6, when: onPath });
+  for (let i = 0; i < 2; i++) french({ x: 0, z: 0, heading: 0, action: 'walk', path: PATHS[4], speed: 0.8, offset: 0.3 + i * 0.012, hat: 'felt', when: onPath });
+  french({ x: 0, z: 0, heading: 0, action: 'walk', path: PATHS[1], speed: 1.1, offset: 0.45, when: onPath });
   // the well: someone drawing water in every season
   const wl = plan(528, 705);
   french({ x: wl[0] + 1.3, z: wl[1], heading: -Math.PI / 2, action: 'reach', tool: 'bucket', when: (st) => onIsland(st) && st.stop !== 'leaving' });
@@ -531,7 +579,7 @@ export async function buildScene(scene, make) {
   for (let i = 0; i < 3; i++) peskotomuhkati({ x: mb[0] + 3 + i * 1.4, z: mb[1] - 3 + i, heading: -0.6, winter: true, action: i === 1 ? 'chat' : 'idle', when: (st) => march.visible });
   for (let i = 0; i < 2; i++) french({ x: mb[0] + 7 + i * 1.2, z: mb[1] - 7 - i, heading: 2.4, action: i ? 'idle' : 'chat', hat: 'monmouth', when: (st) => march.visible });
   // leaving: men carry the boards down to the landing; the shallop takes them out to the ship
-  const toBoats = [at(700, 480), at(900, 600, 4, 0), [PLACES.landing[0] - 18, PLACES.landing[1] - 6], PLACES.landing];
+  const toBoats = [...PATHS[0]].reverse();
   for (let i = 0; i < 8; i++) french({ x: toBoats[0][0], z: toBoats[0][1], heading: 0, action: 'shoulder', tool: 'plank', path: toBoats, speed: 1.2, offset: i / 8, when: (st) => st.stop === 'leaving' });
   const rowers = [-1.5, 0, 1.5].map((dx) => french({ x: 0, z: 0, heading: 0, action: 'row', hat: 'monmouth', when: (st) => st.stop === 'leaving', boat: dx, y: f => f.deckHeight }));
 
@@ -559,7 +607,7 @@ export async function buildScene(scene, make) {
   const pickObj = { pelts: peltPile, trade_kettle: kettle, axe: ax, cloth: cl, storehouse: buildings[0], gardens, palisade, battery_north: batteryNorth, battery_south: batterySouth };
   for (const [n, o] of Object.entries(pickObj)) o.name = n;
 
-  const st = { month: 0, stop: null, dismantle: 0, dismantling: false, lit: [], letters: null };
+  const st = { month: 0, stop: null, dismantle: 0, dismantling: false, lit: [], letters: null, roam: false, season: null };
   const roofSnow = new THREE.Color('#e9edf2');
 
   function setMonth(m) {
@@ -674,6 +722,15 @@ export async function buildScene(scene, make) {
   const shipBed = () => heightAt(ship.position.x, ship.position.z) + 2.3; // where the keel would touch the mud
   return {
     picks,
+    paths: { segs: pathSegs, square: squareWorn },
+    // for free roam (explore.js): what can be clicked, and the means to add the scenes' people and props
+    explore: {
+      root, crowd, french, peskotomuhkati, plan, ground, PLACES, glow,
+      targets: [...buildings, wellM, tree, ...beds, ...crosses, batterySouth, batteryNorth, flake, wood, mill, charcoal, ship, camp],
+      // roam: on or off; season: 'summer' or 'winter' (who shows is decided again on the next setMonth)
+      setRoam(on, season) { st.roam = on; st.season = season; },
+      get state() { return st; },
+    },
     setStop,
     setMonth,
     setLetters,

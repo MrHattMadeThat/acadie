@@ -292,6 +292,37 @@ export const ACTIONS = {
     p.armRp = 2.9; p.armRr = 0.3 + 0.35 * Math.sin(t * 7);
     p.bob = Math.sin(t * 1.6) * 0.01;
   },
+  // turning a hand mill: both hands on the handle, going round and round
+  turn(p, t, f) {
+    const a = TAU * 0.55 * t + f.seed * 6, c = Math.cos(a), s = Math.sin(a);
+    p.lean = 0.38 + 0.1 * s; p.twist = 0.15 * c;
+    p.armLp = p.armRp = 1.05 + 0.35 * s; p.armLr = -0.25 + 0.12 * c; p.armRr = 0.25 + 0.12 * c;
+    p.legL = 0.3; p.legR = -0.22; p.kneeL = 0.2; p.headPitch = 0.3;
+  },
+  // slapping at mosquitoes: one hand up to the neck, then the other
+  swat(p, t, f) {
+    ACTIONS.idle(p, t, f);
+    const u = (t * 1.7) % 1, right = Math.floor(t * 1.7) % 2 === 0;
+    const up = smooth(0, 0.3, u) - smooth(0.55, 0.9, u);
+    if (right) { p.armRp = 0.2 + 2.3 * up; p.armRr = -0.35 * up; } else { p.armLp = 0.2 + 2.3 * up; p.armLr = 0.35 * up; }
+    p.headYaw = 0.45 * Math.sin(t * 3.1); p.twist = 0.1 * Math.sin(t * 3.4);
+  },
+  // pointing out at something, arm straight
+  point(p, t, f) {
+    ACTIONS.idle(p, t, f);
+    p.armRp = 1.5; p.armRr = 0.05; p.headPitch = -0.05; p.headYaw = 0;
+  },
+  // arms wrapped round, shaking with cold
+  shiver(p, t, f) {
+    ACTIONS.idle(p, t, f);
+    p.armLp = p.armRp = 1.0; p.armLr = -0.75; p.armRr = 0.75; p.lean = 0.12; p.headPitch = 0.2;
+    p.twist = 0.05 * Math.sin(t * 28); p.bob = 0.006 * Math.sin(t * 31);
+  },
+  // holding something up in both hands to look at it (a map, a sheet of paper)
+  study(p, t, f) {
+    ACTIONS.idle(p, t, f);
+    p.armLp = p.armRp = 1.1; p.armLr = -0.3; p.armRr = 0.3; p.headPitch = 0.35; p.headYaw = 0.1 * Math.sin(t * 0.6);
+  },
   sit(p, t, f) {
     p.drop = 0.47; p.legL = p.legR = 1.5; p.kneeL = p.kneeR = 1.45; p.lean = -0.05;
     p.armLp = p.armRp = 0.45; p.headYaw = Math.sin(t * 0.3 + f.seed * 5) * 0.4;
