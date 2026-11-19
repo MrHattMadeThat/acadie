@@ -46,6 +46,9 @@ server or GitHub Pages. `npm run build:data` rebuilds the ground from `data/raw/
 | `src/main.js` | The app: stops, travel, the opening flight, progress |
 | `scripts/build-terrain.mjs` | Builds `public/data/` from the elevation tiles and OpenStreetMap |
 | `scripts/probe.mjs` | Ground height at points, or a text map, for placing things |
+| `src/sources.js` | The passages students can open: Champlain's 1613 pages (French, 1878 English, today's words) and the park pages |
+| `src/source-viewer.js` | The source viewer, the list of all sources, and the source buttons |
+| `public/sources/` | Page scans of Champlain's *Voyages* (1613), McGill's copy |
 | `docs/SOURCES.md` | Where every fact beyond the reading comes from |
 
 Three.js is MIT licensed. Map data © OpenStreetMap contributors (ODbL).

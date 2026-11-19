@@ -68,7 +68,7 @@ own. Started 2026-11-18. Read `README.md` for the file map and `docs/SOURCES.md`
   and planks/logs/buckets added. All the French are men (79 wintered). Who shows when is each figure's `when(st)` in
   scene.js. Peskotomuhkati figures appear as traders in the canoe, at the summer camp, and in March 1605; no
   ceremony, nothing stereotyped.
-- The ice: each floe has its own free stretch of river (`lo`/`hi`) and stops at land instead of riding over it.
+- The ice always floats (2026-11-19): `floeLimits` in world.js gives each floe, every 2.5 m of its drift, the lowest tide that keeps 0.15 m of water over all ground under it at any spin; tick clamps to that, so floes fall back off the flats as the tide drops and never touch a beach, the ship's anchorage or the landing.
 - On the last stop the ship comes in close to the landing (`shipLoading`), in water deep enough to float at low tide
   (the bed drops steeply off the island now, so grounding there would leave her hanging over water).
 
@@ -98,11 +98,47 @@ own. Started 2026-11-18. Read `README.md` for the file map and `docs/SOURCES.md`
 - In free roam the shallop lies on the beach at the landing and in summer the trade canoe loops the east channel
   (`canoeLoop`); `setRoam(false)` puts both back.
 
+## Tides (2026-11-19)
+
+- The animated tide (world.js `tick`) runs between -0.75 HW and +0.75 HW, about -2.2 m to +2.2 m; HW (+2.9 m) is
+  the data's high-water line. **Nothing that stands may be in the tidal zone.** `ground()` in scene.js lifts anything
+  below high water up to it, which leaves it hanging in the air at low tide: never place props or buildings on a beach
+  with it. People (and free-roam props, `explore.ground`) stand on the real ground via `stand()` and must be above
+  +2.2 m. Boats either ride the tide (ship, shallop) or are drawn up with `beach()`, which tips them to the slope and
+  floats them level when the water reaches them.
+- Moved out of the tide that day: the kitchen (I, now `KITCHEN_AT` by the bake oven), the board pile and the
+  "Frames from France" scene (top of the bank above the landing), the board carriers' path (starts at the water's
+  edge, `shoreEdge`), the spring canoes and the summer camp canoes. The shallop's oars only show when the rowers do.
+- Audit in the console: walk `acadie.story.explore.root`'s children and `crowd.list`, and compare each position with
+  `heightAt` from world.js (import the `?t=` URL from `performance.getEntriesByType('resource')` after a hot reload,
+  or you get a second, unloaded copy of the module).
+
+## Free-roam keys and the Menu button (2026-11-19)
+
+- W A S D / arrow keys move the camera and its target together, Q and E turn, Shift is faster; `keepOnBoard()` in
+  main.js keeps the target within ±600 m and the camera above the ground. Keys only work in free roam, not while
+  typing, gliding or with the source viewer open. Right-drag slides along the ground.
+- The question mode has a Menu button first in `#topbar` (`backToTitle()` in main.js stops any glide or travel, then
+  `showTitle()`, which Back to title in free roam also uses).
+
+## Sources students can open (2026-11-19)
+
+- `src/sources.js` holds the passages: Champlain's 1613 pages (scan, French, 1878 English, today's words, gold `marks`
+  where the passage sits on the page) and NPS / Parks Canada excerpts. `src/source-viewer.js` shows them; its styles
+  are in `src/sources.css`.
+- A task's `sources` list puts a Source button beside Next once it is answered (it shares the row, so the panel does
+  not grow). A free-roam card's or scene's `cite` list gives the chips under it. The top bar and the roam bar have a
+  Sources button for the whole list. `npm run check` checks every id and image.
+- New passage: add the page scan to `public/sources/` (McGill's copy, `archive.org/download/<id>/page/n<leaf>.jpg`),
+  French from Laverdière (Gutenberg #17258), English from Otis (Gutenberg #6749), and write the plain version from the
+  passage alone. See docs/SOURCES.md.
+
 ## Open items
 
+- Champlain's own words bring back the March 1605 visit (page 57) and give 12 dead, not five, at Port Royal (page 101).
+  Both are the teacher's call; see docs/SOURCES.md.
 - The French models are procedural stand-ins (`src/french.js`); a Codex model brief like the Open Path's would be
   the next art step (ship, habitation buildings from Champlain's plan).
-- Confirm Champlain's dates (first snow, first ice) against his *Voyages*.
 - Git: public repo MrHattMadeThat/acadie; LIVE at https://mrhattmadethat.github.io/acadie/. Pushing to `main`
   deploys through GitHub Pages (`.github/workflows/deploy.yml` runs `npm run check` first). Commits use the GitHub no-reply identity set in
   the repo's local config, like `../st-george-3d`. Stage files by name, never `git add -A`. `data/raw/` (elevation tiles

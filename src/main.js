@@ -8,6 +8,8 @@ import { buildScene, VIEWS } from './scene.js';
 import { buildCalendar } from './calendar.js';
 import { buildExplore } from './explore.js';
 import { renderTask, clearTask } from './tasks.js';
+import { openSources, openLibrary, close as closeSources } from './source-viewer.js';
+import { EXCERPTS } from './sources.js';
 import '@fontsource-variable/fraunces';
 import '@fontsource/atkinson-hyperlegible/400.css';
 import '@fontsource/atkinson-hyperlegible/700.css';
@@ -210,6 +212,9 @@ function showTask(i, k) {
   story.react({ type: 'task-start', index: k });
   const next = $('next');
   next.hidden = true;
+  const task = s.tasks[k];
+  const srcBtn = $('source-btn');
+  srcBtn.hidden = true;
   addItemTags(s.tasks[k]);
   drawNav(i, k);
   $('task').scrollTop = 0;
@@ -229,6 +234,11 @@ function showTask(i, k) {
       next.textContent = last ? (i === STOPS.length - 1 ? 'Finish the chapter' : 'Next stop →') : 'Next question →';
       next.onclick = () => (last ? leave(i) : showTask(i, k + 1));
       next.hidden = false;
+      // the sources behind this answer (sources.js), once it is answered
+      const ids = (task.sources || []).filter((id) => EXCERPTS[id]);
+      srcBtn.hidden = !ids.length;
+      srcBtn.textContent = ids.length > 1 ? '📜 Sources' : '📜 Source';
+      srcBtn.onclick = () => openSources(ids);
       next.focus({ preventScroll: true });
     },
   });
@@ -249,6 +259,7 @@ function showStopDone(i) {
   again.textContent = 'Try these questions again';
   again.onclick = () => showTask(i, 0);
   box.append(p, again);
+  $('source-btn').hidden = true;
   const next = $('next');
   next.hidden = false;
   next.textContent = i === STOPS.length - 1 ? 'Finish the chapter' : 'Next stop →';
@@ -299,6 +310,8 @@ function goTo(i, instant = false) {
   $('caption').hidden = true;
   $('calendar').hidden = true;
   closeMaps();
+  closeSources();
+  $('source-btn').hidden = true;
   glide = null;
   $('maps-btn').hidden = true;
   const from = { eye: camera.position.clone(), look: controls.target.clone() };
@@ -547,6 +560,8 @@ function closeMaps() {
 }
 $('maps-btn').onclick = () => (mapShown ? closeMaps() : showMap('map'));
 $('maps-close').onclick = closeMaps;
+$('sources-btn').onclick = openLibrary;
+$('roam-sources').onclick = openLibrary;
 document.querySelectorAll('.maps-tabs [data-map]').forEach((b) => { b.onclick = () => showMap(b.dataset.map); });
 
 // Explore the live island without entering a lesson or touching the chapter save.
@@ -571,9 +586,9 @@ $('roam').onclick = () => {
   controls.minAzimuthAngle = -Infinity; // no limit on turning round (a stop's limits don't carry over)
   controls.maxAzimuthAngle = Infinity;
   controls.minPolarAngle = 0;
-  controls.listenToKeyEvents(orbitSurface);
+  // the move keys are handled below (roamKeys), anywhere on the page, so OrbitControls doesn't listen for them too
   orbitSurface.tabIndex = 0;
-  orbitSurface.setAttribute('aria-label', 'Explore the island. Arrow keys pan the view.');
+  orbitSurface.setAttribute('aria-label', 'Explore the island. W A S D or the arrow keys move, Q and E turn.');
   controls.update();
   resize();
   orbitSurface.focus();
@@ -583,13 +598,23 @@ controls.addEventListener('change', () => {
 });
 roamBack.onclick = () => {
   explore.stop();
-  controls.stopListenToKeyEvents();
+  held.clear();
+  keyVel.set(0, 0, 0);
   orbitSurface.removeAttribute('tabindex');
   orbitSurface.removeAttribute('aria-label');
   controls.enabled = controls.enablePan = false;
   controls.enableDamping = false;
   controls.update();
   controls.enableDamping = true;
+  $('roam-tools').hidden = true;
+  document.body.classList.remove('roaming');
+  showTitle();
+  $('roam').focus();
+};
+
+// The title screen, with the river at dusk behind it. Progress stays saved: Carry on picks up at the furthest stop,
+// and Start over shows once there is anything to start over from.
+function showTitle() {
   controls.target.copy(tv.look);
   camera.position.copy(tv.eye);
   camera.lookAt(tv.look);
@@ -597,12 +622,100 @@ roamBack.onclick = () => {
   story.setStop('trade', 0);
   setMonth(0);
   world.setEvening(.75);
-  $('roam-tools').hidden = true;
   $('title-screen').hidden = false;
-  document.body.classList.replace('roaming', 'titled');
+  document.body.classList.add('titled');
+  $('restart').hidden = !loadSave();
+  $('start').textContent = save.reached > 0 ? 'Carry on' : 'Sail up the river';
   resize();
-  $('roam').focus();
-};
+}
+
+// Menu (top bar): leave the questions for the title screen, even mid-flight (the opening, a glide between stops, or
+// the glide to a map), so nothing is left half done.
+function backToTitle() {
+  if (intro) {
+    intro = null;
+    $('opening-line').style.opacity = '0';
+    $('skip').hidden = true;
+    document.body.classList.remove('intro');
+  }
+  closeMaps();
+  closeSources();
+  travel = null;
+  glide = null;
+  document.body.classList.remove('travelling', 'with-calendar');
+  clearTask();
+  clearItemTags();
+  controller = null;
+  for (const id of ['caption', 'calendar', 'maps-btn', 'source-btn', 'next', 'finish']) $(id).hidden = true;
+  controls.enabled = false;
+  showTitle();
+  drawChapterIndex();
+  $('start').focus();
+}
+$('title-btn').onclick = backToTitle;
+
+// ------------------------------------------------------------------ free roam: keys to move over the island
+
+// W A S D or the arrow keys slide the view over the ground the way the camera faces; Q and E turn round the spot
+// being looked at; Shift goes faster. Speed grows with the distance to that spot, so close up is slow and a view from
+// high up crosses the river quickly. The view stays over the board and the camera above the ground.
+const MOVE = { KeyW: [1, 0], ArrowUp: [1, 0], KeyS: [-1, 0], ArrowDown: [-1, 0], KeyD: [0, 1], ArrowRight: [0, 1], KeyA: [0, -1], ArrowLeft: [0, -1] };
+const TURN = { KeyQ: 1, KeyE: -1 };
+const BOARD = 600; // metres each way from the island that the look-at spot may go
+const held = new Set();
+let fast = false;
+const typing = (el) => el instanceof HTMLElement && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+addEventListener('keydown', (e) => {
+  fast = e.shiftKey;
+  if (!(e.code in MOVE || e.code in TURN) || !document.body.classList.contains('roaming')) return;
+  if (e.ctrlKey || e.metaKey || e.altKey || typing(e.target)) return;
+  if (document.querySelector('.sv-backdrop:not([hidden])')) return; // the source viewer is open over the scene
+  // inside the building card the arrow keys still scroll it
+  if (e.code.startsWith('Arrow') && e.target instanceof Element && e.target.closest('#explore')) return;
+  held.add(e.code);
+  e.preventDefault();
+});
+addEventListener('keyup', (e) => { fast = e.shiftKey; held.delete(e.code); });
+addEventListener('blur', () => held.clear()); // a key let go in another window would otherwise stick
+
+const keyVel = new THREE.Vector3(), ahead = new THREE.Vector3(), aside = new THREE.Vector3(), want = new THREE.Vector3();
+const lastTarget = new THREE.Vector3(), nudge = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
+function roamKeys(dt) {
+  lastTarget.copy(controls.target);
+  if (explore.gliding) { keyVel.set(0, 0, 0); return; }
+  let f = 0, s = 0, turn = 0;
+  for (const code of held) { if (MOVE[code]) { f += MOVE[code][0]; s += MOVE[code][1]; } turn += TURN[code] || 0; }
+  // ahead = the way the camera faces, flat on the ground (looking straight down, the top of the screen)
+  camera.getWorldDirection(ahead).setY(0);
+  if (ahead.lengthSq() < 1e-4) ahead.set(0, 1, 0).applyQuaternion(camera.quaternion).setY(0);
+  ahead.normalize();
+  aside.set(-ahead.z, 0, ahead.x); // to the right
+  const dist = camera.position.distanceTo(controls.target);
+  const speed = THREE.MathUtils.clamp(dist * 0.5, 3, 400) * (fast ? 2.5 : 1);
+  want.copy(ahead).multiplyScalar(f).addScaledVector(aside, s);
+  if (want.lengthSq() > 0) want.setLength(speed);
+  keyVel.lerp(want, 1 - Math.exp(-dt * 8)); // ease in and out
+  if (keyVel.lengthSq() < 0.01 && !want.lengthSq()) keyVel.set(0, 0, 0);
+  controls.target.addScaledVector(keyVel, dt);
+  camera.position.addScaledVector(keyVel, dt);
+  if (turn) {
+    nudge.subVectors(camera.position, controls.target).applyAxisAngle(UP, turn * 1.3 * dt);
+    camera.position.addVectors(controls.target, nudge);
+  }
+}
+function keepOnBoard(dt) {
+  const t = controls.target, c = camera.position;
+  nudge.set(THREE.MathUtils.clamp(t.x, -BOARD, BOARD) - t.x, 0, THREE.MathUtils.clamp(t.z, -BOARD, BOARD) - t.z);
+  // once the spot slides over the map (keys or right-drag), it rides the ground: up hills, down to the water
+  if (Math.hypot(t.x - lastTarget.x, t.z - lastTarget.z) > 1e-3) {
+    const goal = Math.max(heightAt(t.x, t.z), 0.5) + 1;
+    nudge.y = (goal - t.y) * (1 - Math.exp(-dt * 3));
+  }
+  t.add(nudge);
+  c.add(nudge);
+  const floor = Math.max(heightAt(c.x, c.z), 3) + 2; // above the ground, and above high water (+2.9 m)
+  if (c.y < floor) c.y = floor;
+}
 
 const chapter = CHAPTERS[0];
 setInitialHeading($('chapter-title'), chapter.title);
@@ -649,9 +762,15 @@ renderer.setAnimationLoop(() => {
   else if (document.body.classList.contains('titled')) {
     camera.position.copy(tv.eye).add(new THREE.Vector3(Math.sin(t * 0.05) * 30, 0, 0));
     camera.lookAt(tv.look);
+  } else if (document.body.classList.contains('roaming')) {
+    roamKeys(dt);
+    controls.update();
+    keepOnBoard(dt);
   } else controls.update();
   // the tide runs faster on the calendar, so the ice can be seen moving
-  world.tick(t, dt, camera, STOPS[current]?.calendar && !travel ? 4 : 1);
+  // (only at that stop: not on the title screen or in free roam after leaving it by Menu)
+  const atStop = !document.body.classList.contains('titled') && !document.body.classList.contains('roaming');
+  world.tick(t, dt, camera, atStop && STOPS[current]?.calendar && !travel ? 4 : 1);
   explore.update(dt, t);
   story.update(dt, t, world.tide(), camera);
   renderer.render(scene, camera);

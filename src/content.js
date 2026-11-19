@@ -13,6 +13,9 @@
 //   mapfind  tap a place on a map of the Maritimes (not used since 2026-11-18: too hard to place on a coarse map)
 //   mapmatch put each name on a numbered marker on a map zoomed to `view`
 //
+// `sources` on a task names passages in src/sources.js (Champlain's own pages, park pages). Once the task is answered
+// a Source button beside Next opens them. Tasks that rest on the class reading alone have none.
+//
 // Each stop also says which month the scene shows (0 = June 1604 ... 14 = August 1605, see world.js MONTHS).
 
 export const CHAPTERS = [
@@ -40,6 +43,7 @@ export const STOPS = [
     tasks: [
       {
         type: 'choice',
+        sources: ['nps-fishfur'],
         prompt: 'What two things brought the French 5,000 kilometres across the Atlantic to this coast?',
         options: [
           { text: 'Fish and fur', correct: true },
@@ -51,6 +55,7 @@ export const STOPS = [
       },
       {
         type: 'match',
+        sources: ['nps-history'],
         prompt: 'A trade is happening beside the ship. Who brought each thing?',
         items: [
           { id: 'pelts', label: 'Beaver pelts', answer: 'w' },
@@ -101,6 +106,7 @@ export const STOPS = [
     tasks: [
       {
         type: 'choice',
+        sources: ['nps-expedition'],
         prompt: 'What was new about de Mons’s plan?',
         options: [
           { text: 'His people would stay here all year round', correct: true },
@@ -112,6 +118,7 @@ export const STOPS = [
       },
       {
         type: 'match',
+        sources: ['nps-expedition'],
         prompt: 'Match each key word to what it means.',
         items: [
           { id: 'colony', label: 'Colony', answer: 'colony' },
@@ -127,6 +134,7 @@ export const STOPS = [
       },
       {
         type: 'choice',
+        sources: ['nps-expedition'],
         prompt: 'The King of France made de Mons a promise if he could make the colony work. What was it?',
         options: [
           { text: 'Control of the fur trade here', correct: true },
@@ -152,6 +160,7 @@ export const STOPS = [
     tasks: [
       {
         type: 'multi',
+        sources: ['ch-island', 'nps-summer'],
         prompt: 'In June, the island looked like a smart choice. Why? Pick the two reasons from the reading.',
         options: [
           { text: 'Easy to defend from attack', correct: true },
@@ -164,6 +173,7 @@ export const STOPS = [
       },
       {
         type: 'choice',
+        sources: ['ch-map', 'ch-fort'],
         // Champlain's map of the island (1613): C, a little islet used as a platform for the cannon; D, a platform
         // where cannon were put. NPS also describes the fortified islet.
         lead: 'Press Maps and look for the letters C and D.',
@@ -178,6 +188,7 @@ export const STOPS = [
       },
       {
         type: 'choice',
+        sources: ['ch-cider', 'ch-island'],
         prompt: 'Look across the water. Where were the firewood and the fresh water?',
         options: [
           { text: 'On the shores, across the river', correct: true },
@@ -203,6 +214,7 @@ export const STOPS = [
     tasks: [
       {
         type: 'choice',
+        sources: ['ch-snow', 'ch-cider', 'ch-neighbours'],
         lead: 'Slide the calendar back to June, then slowly into the winter. Watch the Firewood, Fresh water and Fresh food bars on both sides.',
         prompt: 'What happens to the bars in the winter?',
         options: [
@@ -215,6 +227,7 @@ export const STOPS = [
       },
       {
         type: 'choice',
+        sources: ['ch-cider', 'ch-snow', 'nps-winter'],
         prompt: 'What kept the men from getting to firewood and fresh water?',
         options: [
           { text: 'Ice moving in the river with the tide', correct: true },
@@ -226,6 +239,7 @@ export const STOPS = [
       },
       {
         type: 'choice',
+        sources: ['ch-cider', 'nps-winter'],
         prompt: 'With no way to the shore, what did the men drink?',
         options: [
           { text: 'Melted snow', correct: true },
@@ -250,6 +264,7 @@ export const STOPS = [
     tasks: [
       {
         type: 'choice',
+        sources: ['ch-scurvy', 'ch-cider', 'nps-winter'],
         prompt: 'Today we call this sickness scurvy. What causes it?',
         options: [
           { text: 'Going months without fresh food', correct: true },
@@ -261,6 +276,7 @@ export const STOPS = [
       },
       {
         type: 'choice',
+        sources: ['ch-scurvy', 'nps-winter', 'pc-winter'],
         prompt: 'Seventy-nine men spent the winter on the island. How many died?',
         options: [
           { text: '35', correct: true },
@@ -272,6 +288,7 @@ export const STOPS = [
       },
       {
         type: 'choice',
+        sources: ['ch-cider', 'ch-neighbours'],
         prompt: 'Why didn’t the men on the island have fresh food?',
         options: [
           { text: 'They lived on salted and stored food, and were trapped on the island', correct: true },
@@ -301,6 +318,7 @@ export const STOPS = [
     tasks: [
       {
         type: 'match',
+        sources: ['ch-neighbours', 'nps-history', 'nps-passamaquoddy'],
         prompt: 'Two ways of getting through the same winter. Whose way was each?',
         items: [
           { id: 'a', label: 'Stayed all winter on a small island', answer: 'f' },
@@ -317,6 +335,7 @@ export const STOPS = [
       },
       {
         type: 'choice',
+        sources: ['nps-history'],
         // NPS, Saint Croix Island "History & Culture" (quoted at the top of this stop).
         prompt: 'In the spring of 1605, the Peskotomuhkati came back to the shores around the island. What happened then?',
         options: [
@@ -329,6 +348,7 @@ export const STOPS = [
       },
       {
         type: 'answer3',
+        sources: ['ch-scurvy', 'ch-cider', 'ch-neighbours'],
         prompt: 'The big question: why did so many Frenchmen die on the island, when the people who lived here got through the winter?',
         steps: ['Part 1 · Pick a reason. Any of these can work.', 'Part 2 · Which detail backs it up?', 'Part 3 · Why does that detail matter?'],
         claims: [
@@ -366,6 +386,7 @@ export const STOPS = [
     tasks: [
       {
         type: 'choice',
+        sources: ['ch-move', 'nps-portroyal'],
         prompt: 'What did the French do with their buildings when they left?',
         options: [
           { text: 'Took them apart and carried the boards away on their ships', correct: true },
@@ -377,6 +398,7 @@ export const STOPS = [
       },
       {
         type: 'mapmatch',
+        sources: ['ch-move'],
         prompt: 'The French sailed from St. Croix Island, across the Bay of Fundy, to Port Royal. Put each name on its number.',
         view: [-68.4, 43.9, -64.0, 45.8],
         regions: [['New Brunswick', [-65.6, 45.65]], ['Nova Scotia', [-64.75, 44.35]], ['Maine', [-68.0, 45.05]]],
@@ -391,6 +413,7 @@ export const STOPS = [
       },
       {
         type: 'choice',
+        sources: ['nps-portroyal'],
         prompt: 'The next winter, at Port Royal, five men died instead of 35. What helped?',
         options: [
           { text: 'A milder winter, and fresh meat traded from the Mi’kmaq for French bread', correct: true },

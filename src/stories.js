@@ -2,7 +2,8 @@
 //
 // INFO: a card for each building or place you can click. SCENES: little moments acted out by the people of the
 // settlement, with speech bubbles. The words people say are made up, but every fact under them has a source, given
-// in each card's `source` (and in docs/SOURCES.md). Ground rules carried over from the chapter: the sickness and the
+// in each card's `source` (and in docs/SOURCES.md). `cite` names the passages in sources.js that a student can open
+// and read (Champlain's own pages, and the park pages). Ground rules carried over from the chapter: the sickness and the
 // deaths are told plainly and quietly, never acted out; the Peskotomuhkati are shown living their own year.
 //
 // Sources, short names used below:
@@ -14,69 +15,60 @@
 //   READ   the class reading, "The Island"
 
 export const INFO = {
-  demons_house: { letter: 'A', title: 'The house of the Sieur de Mons', source: 'PLAN; READ',
+  demons_house: { letter: 'A', title: 'The house of the Sieur de Mons', source: 'PLAN; READ', cite: ['ch-plan', 'nps-expedition'],
     text: 'Pierre Dugua, Sieur de Mons, led the colony. The King of France promised him control of the fur trade here, if he could make the colony work.' },
-  public_house: { letter: 'B', title: 'The public building', source: 'PLAN',
+  public_house: { letter: 'B', title: 'The public building', source: 'PLAN', cite: ['ch-plan'],
     text: 'Champlain’s plan calls it the building “where we spent time when it rained.” With 79 men on a small island, everyone needed somewhere dry.' },
-  storehouse: { letter: 'C', title: 'The storehouse', source: 'PLAN; NPS',
+  storehouse: { letter: 'C', title: 'The storehouse', source: 'PLAN; NPS', cite: ['ch-plan', 'ch-fort', 'ch-cider'],
     text: 'The food and supplies from France were kept here. In the winter the cider froze in its barrels and had to be handed out by the pound.' },
-  swiss_quarters: { letter: 'D', title: 'Quarters for the Swiss', source: 'PLAN; PC',
+  swiss_quarters: { letter: 'D', title: 'Quarters for the Swiss', source: 'PLAN; PC', cite: ['ch-plan', 'pc-colony'],
     text: 'Champlain marked this house for “the Swiss.” The men who wintered here included noblemen, craftsmen, labourers, soldiers, surgeons and two clergymen.' },
-  forge: { letter: 'E', title: 'The blacksmith shop', source: 'PLAN; MAP',
+  forge: { letter: 'E', title: 'The blacksmith shop', source: 'PLAN; MAP', cite: ['ch-plan', 'ch-map'],
     text: 'A blacksmith made and mended iron tools here. Over on the west shore, men made charcoal (L on the island map), which burns hotter than wood.' },
-  carpenters: { letter: 'F', title: 'The carpenters', source: 'PLAN; PC',
+  carpenters: { letter: 'F', title: 'The carpenters', source: 'PLAN; PC', cite: ['ch-plan', 'pc-colony'],
     text: 'Where the carpenters lived. Some of the buildings came from France as ready-made frames, to be put together on the island.' },
-  lodging_p: { letter: 'P', title: 'Champlain’s house', source: 'PLAN; NPS',
+  lodging_p: { letter: 'P', title: 'Champlain’s house', source: 'PLAN; NPS', cite: ['ch-plan', 'nps-summer'],
     text: 'Champlain lived here with d’Orville and Champdoré. In the summer of 1604 he was away for weeks, mapping the inlets and harbours of the coast.' },
-  lodging_q: { letter: 'Q', title: 'Houses of the craftsmen', source: 'PLAN',
+  lodging_q: { letter: 'Q', title: 'Houses of the craftsmen', source: 'PLAN', cite: ['ch-plan'],
     text: 'Boulay and other craftsmen lived in this row. The colony needed people who could build, mend and make things, far from any shop.' },
-  lodging_r: { letter: 'R', title: 'Houses of Genestou and Sourin', source: 'PLAN',
+  lodging_r: { letter: 'R', title: 'Houses of Genestou and Sourin', source: 'PLAN', cite: ['ch-plan'],
     text: 'Genestou, Sourin and more craftsmen lived here.' },
-  lodging_t: { letter: 'T', title: 'Houses of Beaumont, la Motte and Fougeray', source: 'PLAN',
+  lodging_t: { letter: 'T', title: 'Houses of Beaumont, la Motte and Fougeray', source: 'PLAN', cite: ['ch-plan'],
     text: 'Beaumont, la Motte and Fougeray lived in this row. Champlain wrote down who lived in nearly every house.' },
-  cure: { letter: 'V', title: 'The priest’s house', source: 'PLAN; NPS',
+  cure: { letter: 'V', title: 'The priest’s house', source: 'PLAN; NPS', cite: ['ch-plan', 'nps-expedition'],
     text: 'The colony had a Catholic priest and a Protestant minister, and many of the men were Protestants (Huguenots).' },
-  bakehouse: { letter: 'H', title: 'The bake oven', source: 'PLAN; PC',
+  bakehouse: { letter: 'H', title: 'The bake oven', source: 'PLAN; PC', cite: ['ch-plan', 'ch-mill'],
     text: 'The oven where bread was made. The wheat was ground by hand in a hand mill first. Champlain called that “a painful task.”' },
-  kitchen: { letter: 'I', title: 'The kitchen', source: 'PLAN',
+  kitchen: { letter: 'I', title: 'The kitchen', source: 'PLAN', cite: ['ch-plan'],
     text: 'The kitchen stood on the bank, by the water, a little apart from the houses.' },
-  well: { letter: 'G', title: 'The well', source: 'PLAN; NPS',
+  well: { letter: 'G', title: 'The well', source: 'PLAN; NPS', cite: ['ch-plan', 'ch-cider'],
     text: 'Champlain marked a well on his plan. In the winter, cut off from the shore, the men melted snow to drink.' },
-  square: { letter: 'N', title: 'The square', source: 'PLAN',
+  square: { letter: 'N', title: 'The square', source: 'PLAN', cite: ['ch-plan'],
     text: 'An open square with a tree in the middle, at the heart of the habitation.' },
-  gardens: { letter: 'L M X', title: 'Gardens', source: 'PLAN; MAP',
+  gardens: { letter: 'L M X', title: 'Gardens', source: 'PLAN; MAP', cite: ['ch-plan', 'ch-map', 'ch-mill'],
     text: 'The French planted gardens around the houses, south of them on the island, and on both shores of the river.' },
-  gardens_mainland: { letter: 'M N', title: 'Gardens on the shore', source: 'MAP',
+  gardens_mainland: { letter: 'M N', title: 'Gardens on the shore', source: 'MAP', cite: ['ch-map', 'ch-mill'],
     text: 'Gardens on the mainland, across the water from the island. Easy to reach by boat in summer.' },
-  chapel: { letter: 'F', title: 'The chapel', source: 'MAP',
+  chapel: { letter: 'F', title: 'The chapel', source: 'MAP', cite: ['ch-map'],
     text: 'The chapel, south of the houses on Champlain’s map of the island.' },
-  cemetery: { letter: 'E', title: 'The cemetery', source: 'MAP; NPS; PC',
+  cemetery: { letter: 'E', title: 'The cemetery', source: 'MAP; NPS; PC', cite: ['ch-map', 'ch-scurvy', 'pc-winter'],
     text: '35 of the 79 men who spent the winter here died of scurvy. They were buried on the island. Archaeologists think they were between about 17 and 45 years old.' },
-  battery_south: { letter: 'C', title: 'The cannon on the little islet', source: 'MAP; NPS',
+  battery_south: { letter: 'C', title: 'The cannon on the little islet', source: 'MAP; NPS', cite: ['ch-map', 'ch-fort'],
     text: 'One of the first things the French built: a barricade and a cannon on the little islet off the south end. Ships coming up the river had to pass it.' },
-  battery_north: { letter: 'D', title: 'The cannon platform', source: 'MAP',
+  battery_north: { letter: 'D', title: 'The cannon platform', source: 'MAP', cite: ['ch-map'],
     text: 'A platform with cannon at the north end of the island, facing up the river.' },
-  flake: { letter: '', title: 'A drying rack for cod', source: 'READ',
+  flake: { letter: '', title: 'A drying rack for cod', source: 'READ', cite: [],
     text: 'Salted cod dried in the sun on racks like this. Dried cod kept for months. It is what French fishermen had crossed the ocean for, for a hundred years.' },
-  woodpile: { letter: '', title: 'The woodpile', source: 'NPS; READ',
+  woodpile: { letter: '', title: 'The woodpile', source: 'NPS; READ', cite: ['ch-cider'],
     text: 'In summer, firewood was a short boat ride away on the shores. In winter the ice cut the island off, and the woodpile was all they had.' },
-  mill: { letter: 'I', title: 'The water mill', source: 'MAP',
+  mill: { letter: 'I', title: 'The water mill', source: 'MAP', cite: ['ch-map'],
     text: 'On the mainland, where a brook comes down to the river, de Mons began building a water mill to grind wheat.' },
-  charcoal: { letter: 'L', title: 'Where they made charcoal', source: 'MAP',
+  charcoal: { letter: 'L', title: 'Where they made charcoal', source: 'MAP', cite: ['ch-map'],
     text: 'Wood was slowly burned under a mound of earth to make charcoal, which a blacksmith needs for a hot fire.' },
-  ship: { letter: '', title: 'A French ship', source: 'NPS',
+  ship: { letter: '', title: 'A French ship', source: 'NPS', cite: ['nps-expedition'],
     text: 'De Mons hired five ships. They left France in March 1604 and reached Passamaquoddy Bay at the end of June.' },
-  camp: { letter: '', title: 'A Peskotomuhkati summer camp', source: 'NPSH; READ',
+  camp: { letter: '', title: 'A Peskotomuhkati summer camp', source: 'NPSH; READ', cite: ['nps-passamaquoddy', 'nps-history'],
     text: 'In summer, Peskotomuhkati (Passamaquoddy) families camped by the coast. They fished and hunted seal and porpoise. In winter they moved inland, near firewood and game.' },
-};
-
-export const SOURCES = {
-  PLAN: 'Champlain’s plan of the habitation, 1613 (Parks Canada)',
-  MAP: 'Champlain’s map of the island, 1613 (Parks Canada)',
-  NPS: 'National Park Service, “Saint Croix Island Settlement”',
-  NPSH: 'National Park Service, “Saint Croix Island: Historical Context”',
-  PC: 'Parks Canada, Saint Croix Island International Historic Site',
-  READ: 'The class reading, “The Island”',
 };
 
 // A scene: where it happens (`at`: plan pixels [px, py], or world metres with `world: true`), who is in it (`cast`:
@@ -99,9 +91,10 @@ export const SCENES = [
     ],
     note: 'Champlain wrote that the men made this little islet ready to defend “in a very short time,” though the mosquitoes gave them “great annoyance.” A cannon stood on it: C on his map.',
     source: 'NPS; MAP',
+    cite: ['ch-fort', 'ch-map'],
   },
   {
-    id: 'frames', season: 'summer', title: 'Frames from France', at: [20, -119], world: true,
+    id: 'frames', season: 'summer', title: 'Frames from France', at: [10, -123], world: true, // on top of the bank above the landing, by the boards
     cast: {
       a: { at: [-1, 0], face: 'b', act: 'idle', hat: 'monmouth' },
       b: { at: [1.2, 0.6], face: 'a', act: 'chat', hat: 'felt' },
@@ -110,10 +103,11 @@ export const SCENES = [
       { who: 'a', say: 'These frames came all the way from France, in pieces.' },
       { who: 'b', say: 'Then let’s put them together the right way round this time.' },
       { who: 'a', say: 'Ha! Grab the other end.', do: { a: { act: 'laugh' } } },
-      { who: 'b', say: 'Up the hill to the carpenters. Watch your feet.', do: { a: { act: 'shoulder', tool: 'plank', to: [-9, -2] }, b: { act: 'shoulder', tool: 'plank', to: [-7, -1] } } },
+      { who: 'b', say: 'Up the hill to the carpenters. Watch your feet.', do: { a: { act: 'shoulder', tool: 'plank', to: [-7, 3] }, b: { act: 'shoulder', tool: 'plank', to: [-5.5, 3.4] } } },
     ],
     note: 'Some of the buildings came from France as ready-made frames, to be put together on the island.',
     source: 'PC',
+    cite: ['pc-colony'],
   },
   {
     id: 'handmill', season: 'summer', title: 'The hand mill', at: [945, 785],
@@ -130,6 +124,7 @@ export const SCENES = [
     ],
     note: 'Champlain wrote that the hand mill for grinding their wheat “gave much trouble and labour.” It was “a painful task.” De Mons began a water mill on the mainland (I on the island map).',
     source: 'PC; MAP',
+    cite: ['ch-mill', 'ch-map'],
   },
   {
     id: 'champlain', season: 'summer', title: 'Champlain’s maps', at: [520, 668],
@@ -146,6 +141,7 @@ export const SCENES = [
     ],
     note: 'In the summer of 1604 Champlain mapped the inlets and harbours of the coast, and came back around the end of September. His maps of the island and the habitation were printed in 1613: press Maps to see them.',
     source: 'NPS; PLAN',
+    cite: ['nps-summer', 'ch-plan', 'ch-map'],
   },
   {
     id: 'shellfish', season: 'summer', title: 'Low tide', at: [34, -60], world: true,
@@ -160,6 +156,7 @@ export const SCENES = [
     ],
     note: 'Champlain wrote that around the settlement, at low tide, there were plenty of shellfish: clams, mussels, sea urchins and snails.',
     source: 'PC',
+    cite: ['ch-snow'],
   },
   {
     id: 'camp', season: 'summer', title: 'Fish drying in the sun', at: [1162, -616], world: true,
@@ -176,6 +173,7 @@ export const SCENES = [
     ],
     note: 'Peskotomuhkati (Passamaquoddy) families had lived around this river for thousands of years. In summer they camped by the coast, fished, and hunted seal and porpoise. In winter they moved inland, near firewood, shelter and game. Their name for the island is thought to be Muttoneguis.',
     source: 'NPSH; READ',
+    cite: ['nps-passamaquoddy', 'nps-history'],
   },
   {
     id: 'cider', season: 'winter', title: 'Cider by the pound', at: [-35.5, -108], world: true, // at the storehouse door
@@ -194,6 +192,7 @@ export const SCENES = [
     ],
     note: 'That winter the cider froze in the barrels and had to be handed out by the pound. The men drank Spanish wine and melted snow.',
     source: 'NPS; READ',
+    cite: ['ch-cider', 'nps-winter'],
   },
   {
     id: 'snow', season: 'winter', title: 'Snow for water', at: [960, 480],
@@ -210,6 +209,7 @@ export const SCENES = [
     ],
     note: 'Cut off from the shore by the ice, the men ran short of drinking water and firewood. They melted snow to drink.',
     source: 'NPS; READ',
+    cite: ['ch-cider', 'nps-winter'],
   },
   {
     id: 'ice', season: 'winter', title: 'The ice', at: [22, -112], world: true,
@@ -225,5 +225,6 @@ export const SCENES = [
     ],
     note: 'Before long the river filled with dangerous chunks of ice, and nobody could cross. The tide carried the ice up and down the river.',
     source: 'NPS; READ',
+    cite: ['ch-cider', 'ch-snow'],
   },
 ];

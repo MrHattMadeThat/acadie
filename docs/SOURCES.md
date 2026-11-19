@@ -29,8 +29,9 @@ stop still teaches, with the Mi'kmaq), and NPS "History & Culture" says only tha
 spring of 1605 and helped. The Canadian Encyclopedia article and the NPS timeline once cited for it could not be
 read. The teacher's rule: if we can't prove it, it goes. Bring the March visit back only with Champlain's own words.
 
-Still to confirm against a primary source: the exact dates of first snow and first ice (Champlain's *Voyages*),
-and whether the March 1605 visitors are best called Passamaquoddy or Etchemin (the sources use both).
+**Confirmed 2026-11-19 in Champlain's *Voyages* (1613), page 52:** snow from October 6, 1604; ice in the river from
+December 3. Still open: whether the March 1605 visitors are best called Passamaquoddy or Etchemin. Champlain only
+says "some savages" (page 57; see below).
 
 **Not sourced, on purpose:** the month-by-month counts of sick and dead men on the calendar card. Only two numbers
 are known (79 men at the start, 35 dead by spring), so the card shows dots growing through the winter and only
@@ -78,6 +79,13 @@ How they were used:
   slope.
 - **The storehouse (C)** (2026-11-19) stands inland beside the Swiss quarters (D), facing the square. At the
   plan's spot it hung over the west bank on 10 m of slope. A judgment call, not a source.
+- **The kitchen (I)** (2026-11-19) stands on the flat top of the island north of the garden by the bake oven (H).
+  Champlain drew it on the bank by the water; on the real island that spot is a beach the tide covers. A judgment
+  call, not a source. The same day the boards at the landing and the "Frames from France" scene moved up to the top
+  of the bank, and the spring 1605 canoes were drawn up to the top of the tide: nothing that stands on the ground
+  sits where the tide comes in.
+- **The batteries (C and D on the island map)** face out over the river: D north, up the river, C south, down it.
+  Which way the guns pointed is not recorded; this is the plain reading of a battery at each end.
 - **H, Little Dochet Island:** OSM has only its name, so it is raised from the elevation tiles.
 - **The plan's orientation** is not stated. It is drawn with its top to the west, like the island map: then its
   gardens fall on the south side as the island map shows (B), and its kitchen (I) sits on the bank.
@@ -150,3 +158,34 @@ square, barrels by the storehouse, benches by some doors, a wheelbarrow by the g
 the banks, driftwood and a line of dried rockweed at high water, gulls, snowdrifts against the houses and paths
 trodden through the snow. In free roam the shallop lies on the beach below the landing, and in summer a
 Peskotomuhkati (Passamaquoddy) canoe goes up and down the channel, as the traders' canoe does on the first stop.
+
+## Sources students can open (`src/sources.js`, 2026-11-19)
+
+The **Sources** button (top bar, roam bar), the **Source** button beside Next once a question is answered, and the
+chips under every free-roam card open a viewer (`src/source-viewer.js`): Champlain's printed page beside the same words
+in today's English, the 1878 English translation, and his French.
+
+| What | Where it comes from |
+|---|---|
+| Page images (`public/sources/champlain-1613-*.webp`) | Champlain, *Les Voyages du sieur de Champlain* (Paris, 1613), McGill University Library copy (Lande collection), scanned for the Internet Archive: archive.org/details/McGillLibrary-rbsc_lande_00116_c2-19950. Public domain. Resized to 1300 px wide (the island map 2000). |
+| French text | C.-H. Laverdière, *Œuvres de Champlain* (Quebec, 1870), Project Gutenberg #17258. Laverdière kept the 1613 spelling but prints v for u and adds some accents; the viewer says so. |
+| English text | C. P. Otis, *Voyages of Samuel de Champlain*, vol. 2 (Prince Society, Boston, 1878), Project Gutenberg #6749. Public domain. One OCR slip fixed ("good foil" → "good soil"). |
+| "In today's words" | Ours, written for Grade 8. Each says only what its passage says. |
+| NPS excerpts | Quoted word for word from the three NPS pages in the free-roam table above (public domain). |
+| Parks Canada excerpts | "A French Colony in Acadie" and "A Winter of Despair", quoted briefly with credit. |
+
+The gold bands on each page (`marks`, percent of page height) were measured by eye from the scans. Champlain's
+account of the surgeons' examinations (pages 54–55) is left out on purpose, like everything about the sickness.
+
+Things the 1613 text turned up, **not yet acted on** (the teacher's call):
+
+- **The March 1605 visit is in Champlain** (page 57): "In the month of March following, some savages came and gave us
+  a portion of their game in exchange for bread and other things which we gave them." This is the visit that was cut
+  on 2026-11-18 for want of Champlain's own words. He does not name the people.
+- **Port Royal's first winter (1605–06):** Champlain (page 101) says 12 of 45 died; NPS says five. The `leaving`
+  stop's question says five. The viewer shows both, with a "sources can disagree" note on Champlain's page.
+- Champlain says the island's gardens failed (only sand, burned by the sun) while the mainland's grew well (page 37).
+- Parks Canada quotes a December 1605 statement by de Mons that René Noël, Sieur de Bourgioly, died of scurvy on the
+  island on March 31, 1605. Champlain's plan names a "la Motte Bourioli" in house T; whether they are the same man is
+  not established.
+- Otis translates the plan's "Logement des suisses" (D) as "Dwelling of the guard"; the viewer notes Champlain's word.

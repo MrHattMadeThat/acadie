@@ -3,14 +3,22 @@
 // The words and facts are in stories.js; the scene's people come from the same crowd as everyone else (people.js).
 import * as THREE from 'three';
 import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
-import { INFO, SCENES, SOURCES } from './stories.js';
+import { INFO, SCENES } from './stories.js';
+import { SHORT } from './sources.js';
+import { sourceChips } from './source-viewer.js';
 
 const MONTH = { summer: 1, winter: 7 }; // July 1604, January 1605 (world.js MONTHS)
 const SEASON_NAME = { summer: 'Summer 1604', winter: 'Winter 1604–05' };
 const FACE = { east: Math.PI / 2, west: -Math.PI / 2, north: Math.PI, south: 0 };
 const WALK = 1.3; // m/s
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-const sourceLine = (keys) => 'Source: ' + keys.split(/;\s*/).map((k) => SOURCES[k] || k).join('; ');
+// The sources under a card or scene: its `cite` list (passages in sources.js), or else its short `source` names.
+// The class reading can't be opened here, so it is named in plain text.
+function sourcesOf(x) {
+  const keys = x.source.split(/;\s*/);
+  const ids = x.cite || keys.flatMap((k) => SHORT[k] || []);
+  return sourceChips(ids, keys.includes('READ') ? 'your class reading' : null);
+}
 
 // ------------------------------------------------------------------ props for the scenes
 
@@ -186,7 +194,7 @@ export function buildExplore({ story, camera, controls, renderer, setMonth, onFo
     stopScene();
     openCard((c) => {
       c.append(el('p', 'eyebrow', info.letter ? `On Champlain’s map: ${info.letter}` : SEASON_NAME[season]));
-      c.append(el('h2', null, info.title), el('p', null, info.text), el('p', 'explore-source', sourceLine(info.source)));
+      c.append(el('h2', null, info.title), el('p', null, info.text), sourcesOf(info));
       const near = SCENES.filter((s) => s.season === season && s.near === id);
       for (const s of near) { const b = el('button', 'paint-button small', `Watch: ${s.title}`); b.type = 'button'; b.onclick = () => play(s); c.append(b); }
     });
@@ -234,7 +242,7 @@ export function buildExplore({ story, camera, controls, renderer, setMonth, onFo
     const sc = playing.sc;
     hideBubbles();
     playing.done = true;
-    card.append(el('p', 'explore-note', sc.note), el('p', 'explore-source', sourceLine(sc.source)));
+    card.append(el('p', 'explore-note', sc.note), sourcesOf(sc));
     const again = el('button', 'paint-button small', 'Watch again');
     again.type = 'button';
     again.onclick = () => play(sc);
@@ -339,7 +347,8 @@ export function buildExplore({ story, camera, controls, renderer, setMonth, onFo
   const canvas = renderer.domElement;
   canvas.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
   canvas.addEventListener('pointerup', (e) => {
-    if (!on || !downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 6) return;
+    // a drag (to look or slide the view) is not a click, and only the left button clicks
+    if (!on || !downAt || e.button !== 0 || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 6) return;
     const sc = hitScene(e);
     if (sc) return play(sc);
     const id = hitInfo(e);
@@ -392,6 +401,7 @@ export function buildExplore({ story, camera, controls, renderer, setMonth, onFo
       for (const sc of SCENES) { sc.group.visible = false; sc.mark.visible = false; }
     },
     get on() { return on; },
+    get gliding() { return !!glide; }, // the camera is on its way to a scene: the move keys wait (main.js)
     // for checks: each scene's default view, and whether it sees the people clearly
     views: () => SCENES.filter((s) => s.season === season).map((s) => ({ id: s.id, ...defaultView(s) })),
     // for checks in the console: acadie.explore.play('cider'), acadie.explore.season('winter')

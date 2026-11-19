@@ -60,6 +60,19 @@ const inInset = (x, z, pad = 0) => {
   const I = meta.inset;
   return x > I.x0 + pad && x < I.x0 + (I.w - 1) * I.cell - pad && z > I.z0 + pad && z < I.z0 + (I.h - 1) * I.cell - pad;
 };
+// The highest ground anywhere in a box (never lower than the truth: the surface is flat between grid points).
+function gridMax(g, arr, x0, z0, x1, z1) {
+  const i0 = clamp(Math.floor((x0 - g.x0) / g.cell), 0, g.w - 1), i1 = clamp(Math.ceil((x1 - g.x0) / g.cell), 0, g.w - 1);
+  const j0 = clamp(Math.floor((z0 - g.z0) / g.cell), 0, g.h - 1), j1 = clamp(Math.ceil((z1 - g.z0) / g.cell), 0, g.h - 1);
+  let m = -Infinity;
+  for (let j = j0; j <= j1; j++) for (let k = j * g.w + i0, e = j * g.w + i1; k <= e; k++) if (arr[k] > m) m = arr[k];
+  return m;
+}
+function heightMaxIn(x0, z0, x1, z1) {
+  const I = meta.inset, m = gridMax(meta.main, mainH, x0, z0, x1, z1);
+  const over = x1 > I.x0 && x0 < I.x0 + (I.w - 1) * I.cell && z1 > I.z0 && z0 < I.z0 + (I.h - 1) * I.cell;
+  return over ? Math.max(m, gridMax(I, insetH, x0, z0, x1, z1)) : m;
+}
 // Ground height (m above mean sea level) anywhere on the board.
 export function heightAt(x, z) {
   return inInset(x, z) ? sampleGrid(meta.inset, insetH, x, z) : sampleGrid(meta.main, mainH, x, z);
@@ -364,8 +377,17 @@ export function buildWorld(scene, { trees, low = false }) {
   // ---------------------------------------------------------------- river ice
 
   // Flat cakes of ice that ride the tide up and down the river, the way they cut the island off in the winter of
-  // 1604-05. At low tide the ones over the flats ground on the mud.
+  // 1604-05. They always float: at high tide they spread over the flooded flats up to the island's shore, and as the
+  // water falls each one is held back to water deep enough for its whole footprint, so ice never sits on a beach.
   const AX = new THREE.Vector2(0.38, 0.925).normalize(); // down-river, roughly south-south-east
+  const TIDE = H * 0.75;          // the tide's swing either side of mean sea level (tick)
+  const DRIFT = 140, SWAY = 12;   // how far the tide carries a floe each way, and its own slow wander (tick)
+  const REACH = DRIFT + SWAY;
+  const STEP = 2.5;               // a floe's limits are worked out every STEP metres along its drift
+  const CELL = 2.5;               // ground sampled on this grid along each floe's strip of river
+  const CLEAR = 0.15;             // a floating floe keeps this much water over the highest ground under it
+  const PAD = 0.02;               // past the first shallows, each further metre needs this much more tide (no jumps)
+  const KEEP_CLEAR = [[215, -75, 18], [30, -110, 12]]; // the ship at anchor and the landing (PLACES in scene.js)
   const floeGeo = (() => {
     const g = new THREE.CylinderGeometry(1, 1, 0.35, 9);
     const P = g.attributes.position;
@@ -376,22 +398,74 @@ export function buildWorld(scene, { trees, low = false }) {
     g.computeVertexNormals();
     return g;
   })();
+  let KMAX = 0; // the floe's widest reach from its centre, as a fraction of r (it spins, so any direction counts)
+  for (let i = 0, P = floeGeo.attributes.position; i < P.count; i++) KMAX = Math.max(KMAX, Math.hypot(P.getX(i), P.getZ(i)));
+
+  // A floe's limits: for each point every STEP metres along its drift, the lowest tide at which it may be there. That
+  // is the highest ground anywhere under a circle a STEP wider than the floe (so it holds between the points, at
+  // any spin) plus CLEAR, and it only grows going out from home (a floe can't pass a bar to reach deeper water
+  // beyond). Returns [down-river, up-river] lists, or null if the floe's home dries at low tide.
+  const SAMPLES = Math.ceil(REACH / STEP);
+  const FREE = new Float32Array(SAMPLES + 1).fill(-Infinity); // open water the whole way
+  function floeLimits(x, z, r) {
+    const R = KMAX * r + STEP + 0.5;
+    // most floes are out in deep water: one look at the box around their whole strip of river settles it
+    const L = SAMPLES * STEP + R + CELL, ex = Math.abs(AX.x) * L + Math.abs(AX.y) * R, ez = Math.abs(AX.y) * L + Math.abs(AX.x) * R;
+    if (heightMaxIn(x - ex, z - ez, x + ex, z + ez) + CLEAR <= -TIDE
+      && KEEP_CLEAR.every(([kx, kz, kr]) => Math.abs(kx - x) > ex + kr || Math.abs(kz - z) > ez + kr)) return [FREE, FREE];
+    const nu = Math.ceil((SAMPLES * STEP + R + CELL) / CELL), nv = Math.ceil(R / CELL), rows = 2 * nv + 1;
+    const colMax = new Float32Array((2 * nu + 1) * (nv + 1)).fill(NaN); // per column: highest ground within w cells of the axis
+    const hs = new Float32Array(rows);
+    const col = (c) => {
+      const o = c * (nv + 1);
+      if (!Number.isNaN(colMax[o])) return o;
+      const u = (c - nu) * CELL, cx = x + AX.x * u, cz = z + AX.y * u;
+      for (let j = 0; j < rows; j++) { const v = (j - nv) * CELL; hs[j] = heightAt(cx + AX.y * v, cz - AX.x * v); }
+      for (let w = 0, m = -Infinity; w <= nv; w++) colMax[o + w] = m = Math.max(m, hs[nv - w], hs[nv + w]);
+      return o;
+    };
+    const need = (s) => {
+      const cx = x + AX.x * s, cz = z + AX.y * s;
+      for (const [kx, kz, kr] of KEEP_CLEAR) if ((cx - kx) ** 2 + (cz - kz) ** 2 < (kr + R) ** 2) return Infinity;
+      let m = -Infinity;
+      for (let c = Math.ceil((s - R - CELL / 2) / CELL) + nu, last = Math.floor((s + R + CELL / 2) / CELL) + nu; c <= last; c++) {
+        const d = Math.max(0, Math.abs((c - nu) * CELL - s) - CELL / 2);
+        const w = Math.min(nv, Math.ceil(Math.sqrt(Math.max(0, R * R - d * d)) / CELL));
+        m = Math.max(m, colMax[col(c) + w]);
+      }
+      return m + CLEAR;
+    };
+    const home = need(0);
+    if (home > -TIDE) return null;
+    return [1, -1].map((dir) => {
+      const list = [home];
+      for (let i = 1; i <= SAMPLES; i++) {
+        const prev = list[i - 1];
+        list.push(Math.max(need(dir * i * STEP), prev > -TIDE ? prev + PAD * STEP : prev));
+        if (list[i] > TIDE) break; // the tide never gets this high: the floe stops before here
+      }
+      return Float32Array.from(list);
+    });
+  }
+  // how far a floe may be from home along one of its lists at tide T, in metres (smooth as the tide moves)
+  function reach(list, T) {
+    let a = 0, b = list.length - 1;
+    if (list[b] <= T) return b * STEP;
+    while (b - a > 1) { const m = (a + b) >> 1; if (list[m] <= T) a = m; else b = m; }
+    return (a + (T - list[a]) / (list[b] - list[a])) * STEP;
+  }
+
   const FLOES = low ? 700 : 1600;
   const floes = new THREE.InstancedMesh(floeGeo, new THREE.MeshLambertMaterial({ color: '#e9eef2' }), FLOES);
   const floeData = [];
   for (let k = 0, tries = 0; k < FLOES && tries < 40000; tries++) {
     const along = (hash(tries, 1) - 0.5) * 3000, across = (hash(tries, 2) - 0.5) * 2200;
     const x = AX.x * along + AX.y * across, z = AX.y * along - AX.x * across;
-    if (heightAt(x, z) > H - 0.6) continue;
+    if (heightAt(x, z) + CLEAR > -TIDE) continue; // home must stay afloat at low tide
     const r = 3 + hash(tries, 3) ** 2 * 16;
-    // how far this floe can drift up and down the river before its edge would touch land: it stops there (jammed
-    // against the shore or the island) instead of riding over it
-    const wet = (o) => [[0, 0], [r, 0], [-r, 0], [0, r], [0, -r]].every(([dx, dz]) => heightAt(x + AX.x * o + dx, z + AX.y * o + dz) < H - 0.5);
-    if (!wet(0)) continue;
-    let lo = 0, hi = 0;
-    while (hi < 160 && wet(hi + 5)) hi += 5;
-    while (lo > -160 && wet(lo - 5)) lo -= 5;
-    floeData.push({ x, z, r, lo, hi, a: hash(tries, 4) * 6.28, ph: hash(tries, 5) * 6.28, spin: (hash(tries, 6) - 0.5) * 0.05 });
+    const lim = floeLimits(x, z, r);
+    if (!lim) continue;
+    floeData.push({ x, z, r, down: lim[0], up: lim[1], a: hash(tries, 4) * 6.28, ph: hash(tries, 5) * 6.28, spin: (hash(tries, 6) - 0.5) * 0.05 });
     k++;
   }
   floes.count = 0;
@@ -474,16 +548,15 @@ export function buildWorld(scene, { trees, low = false }) {
       sky.position.copy(camera.position);
       // a tide every 80 seconds or so, scaled by tideSpeed
       state.tidePhase = (state.tidePhase || 0) + dt * tideSpeed * (Math.PI * 2) / 80;
-      state.tide = Math.sin(state.tidePhase) * H * 0.75;
+      state.tide = Math.sin(state.tidePhase) * TIDE;
       water.position.y = state.tide;
       if (floes.count) {
         const flow = Math.cos(state.tidePhase); // the current runs hardest at mid-tide
+        const T = state.tide, y = T + 0.1; // every floe floats: its limits keep dry ground out from under it
         for (let k = 0; k < floes.count; k++) {
           const f = floeData[k];
-          const off = clamp(-Math.sin(state.tidePhase) * 140 + Math.sin(t * 0.05 + f.ph) * 12, f.lo, f.hi);
+          const off = clamp(-Math.sin(state.tidePhase) * DRIFT + Math.sin(t * 0.05 + f.ph) * SWAY, -reach(f.up, T), reach(f.down, T));
           const x = f.x + AX.x * off, z = f.z + AX.y * off;
-          const ground = heightAt(x, z);
-          const y = Math.max(state.tide, ground + 0.12) + 0.1;
           q.setFromAxisAngle(up, f.a + t * f.spin * (0.3 + Math.abs(flow)));
           m4.compose(fp.set(x, y, z), q, s.set(f.r, 1, f.r * 0.8));
           floes.setMatrixAt(k, m4);

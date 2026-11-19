@@ -1,6 +1,9 @@
 // Checks src/content.js: every task is well formed, and every `pick` names a part the scene can show.
 // Run: npm run check
+import { existsSync } from 'node:fs';
 import { STOPS, CALENDAR, CHAPTERS } from '../src/content.js';
+import { DOCS, EXCERPTS, SHORT } from '../src/sources.js';
+import { INFO, SCENES } from '../src/stories.js';
 
 // Keep in step with the `picks` list in src/scene.js.
 const PICKS = ['pelts', 'trade_kettle', 'axe', 'cloth', 'storehouse', 'gardens', 'palisade', 'battery_north', 'battery_south'];
@@ -58,5 +61,25 @@ for (const s of STOPS) {
 }
 for (const [m, c] of CALENDAR.entries()) for (const k of ['fr', 'pk', 'camp']) if (!c[k]) fail(`calendar ${m}`, `missing ${k}`);
 
+// The sources (src/sources.js): every passage is whole, every page image exists, and everything that cites one
+// names a real passage.
+for (const [id, x] of Object.entries(EXCERPTS)) {
+  const d = DOCS[x.doc];
+  if (!d) { fail(`source ${id}`, `unknown doc ${x.doc}`); continue; }
+  for (const k of ['title', 'where', 'plain']) if (!x[k]) fail(`source ${id}`, `missing ${k}`);
+  if (x.pages) {
+    for (const k of ['fr', 'en']) if (!x[k]?.length) fail(`source ${id}`, `a primary passage needs ${k}`);
+    for (const p of x.pages) {
+      if (!existsSync(new URL(`../public/${p.src}`, import.meta.url))) fail(`source ${id}`, `no image ${p.src}`);
+      for (const [a, b] of p.marks) if (!(a >= 0 && b > a && b <= 100)) fail(`source ${id}`, `bad mark ${a}-${b} on ${p.label}`);
+    }
+  } else if (!x.quote?.length || !(x.link || d.link)) fail(`source ${id}`, 'a secondary passage needs quote and link');
+}
+const cites = (where, ids) => (ids || []).forEach((id) => { if (!EXCERPTS[id]) fail(where, `cites ${id}, which isn't in sources.js`); });
+for (const s of STOPS) s.tasks.forEach((t, i) => cites(`${s.id}.${i + 1}`, t.sources));
+for (const [id, x] of Object.entries(INFO)) cites(`card ${id}`, x.cite);
+for (const sc of SCENES) cites(`scene ${sc.id}`, sc.cite);
+for (const [k, ids] of Object.entries(SHORT)) cites(`short name ${k}`, ids);
+
 if (errors.length) { console.error(errors.join('\n')); process.exit(1); }
-console.log(`content ok: ${STOPS.length} stops, ${count} questions, ${CALENDAR.length} months`);
+console.log(`content ok: ${STOPS.length} stops, ${count} questions, ${CALENDAR.length} months, ${Object.keys(EXCERPTS).length} source passages`);

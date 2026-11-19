@@ -430,6 +430,8 @@ body.loading::after { content: 'Loading the river\2026'; position: fixed; inset:
 /* sits beside the stop tabs, the same height */
 .maps-btn { padding: 0 14px; font: 600 16px var(--display); cursor: pointer; }
 .maps-btn[hidden] { display: none; }
+/* Menu: back to the title screen from the questions (not on the title itself, nor in free roam, which has its own) */
+body:is(.titled, .roaming) #title-btn { display: none; }
 .maps {
   position: fixed; left: 16px; top: 56px; bottom: 16px; z-index: 5; width: min(560px, calc(100vw - 500px));
   display: flex; flex-direction: column; gap: 8px; padding: 10px 12px 12px;

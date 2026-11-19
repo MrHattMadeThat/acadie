@@ -25,10 +25,10 @@ export const PLACES = {
   ship: [215, -75],
   shipLoading: [104, -120], // August 1605: brought in close to the landing to load the boards (deep enough to float at low tide)
   camp: [1150, -640],      // a Peskotomuhkati summer camp on the east shore (a representative spot, not a known site)
-  campBeach: [1128, -600],
+  campBeach: [1133, -601], // drawn up above the top of the tide
   // On the island these follow Champlain's map, fitted to the island's real (mid-tide) outline: south of the
   // habitation the cemetery (E) toward the west shore, the gardens (B) toward the east, the chapel (F) south of both.
-  marchBeach: [-76, -42],  // where Peskotomuhkati canoes come ashore on the island in the spring of 1605
+  marchBeach: [-73, -45.8], // where Peskotomuhkati canoes come ashore on the island in the spring of 1605 (drawn up to the top of the tide)
   landing: [30, -110],     // the beach below the habitation, on the channel side
   islandGardens: [12, -60], // B
   cemetery: [-30, -62],    // E
@@ -130,6 +130,26 @@ function smoke(parent, at, { count = 12, rise = 0.6, life = 9, size = 2.2, wind 
 }
 
 const ground = (x, z) => Math.max(heightAt(x, z), HW() + 0.3);
+// The tide (world.js) runs between -0.75 HW and +0.75 HW, about -2.2 m to +2.2 m. Buildings and props are set with
+// ground(), which lifts anything below high water up to it; that is why nothing may be put on the beach with it (it
+// hangs in the air at low tide). People, and the things the free-roam scenes set down, stand on the real ground
+// instead, and must be above +2.2 m so the tide never reaches them.
+const stand = (x, z) => heightAt(x, z);
+// A boat drawn up on a beach: on the ground, tipped to the slope along her length (local x) and across her. When
+// the tide comes in over her she floats, level (update() runs `beached`).
+const beached = [];
+function beach(obj, x, z, rotY, parent, len = 5, beam = 1.2) {
+  const c = Math.cos(rotY), s = Math.sin(rotY);
+  const bow = heightAt(x + c * len / 2, z - s * len / 2), stern = heightAt(x - c * len / 2, z + s * len / 2);
+  const port = heightAt(x + s * beam / 2, z + c * beam / 2), stbd = heightAt(x - s * beam / 2, z - c * beam / 2);
+  obj.position.set(x, (bow + stern + port + stbd) / 4 - 0.05, z);
+  obj.rotation.order = 'YXZ';
+  obj.rotation.set(-Math.atan2(port - stbd, beam), rotY, Math.atan2(bow - stern, len));
+  obj.userData.beached = { y: obj.position.y, rx: obj.rotation.x, rz: obj.rotation.z, ph: x * 0.7 + z };
+  beached.push(obj);
+  parent.add(obj);
+  return obj;
+}
 function place(obj, x, z, rotY = 0, parent) {
   obj.position.set(x, ground(x, z), z);
   obj.rotation.y = rotY;
@@ -191,9 +211,9 @@ export async function buildScene(scene, make) {
     ['T', 'lodging_t', 748, 752, { units: 3, unitW: 4.4, d: 6, chimneys: [0, 2] }, [13.2, 6], 0, 'Beaumont, la Motte and Fougeray'],
     ['V', 'cure', 572, 770, () => F.hall({ w: 11, d: 6, h: 3, name: 'cure' }), [11, 6], 0, 'our priest'],
     ['H', 'bakehouse', 880, 838, () => F.bakehouse(), [7, 5], 0, 'the bake oven'],
-    // I: Champlain draws the kitchen on the bank by the water, north-west of the houses. The real north end is
-    // narrower than his, so it stands a little nearer the houses (plan 1020, 350 rather than 1128, 205), on the bank.
-    ['I', 'kitchen', 1020, 350, () => F.hall({ w: 6, d: 5, h: 2.8, name: 'kitchen', chimneyAt: 0.25 }), [6, 5], Math.PI / 2, 'the kitchen'],
+    // I: Champlain draws the kitchen on the bank by the water, north-west of the houses. There the real bank is a
+    // beach (+2.4 m, under water at spring tides), so it stands at KITCHEN_AT instead (2026-11-19, below).
+    ['I', 'kitchen', 1020, 350, () => F.hall({ w: 6, d: 5, h: 2.8, name: 'kitchen', chimneyAt: 0.25 }), [6, 5], -Math.PI / 2, 'the kitchen'], // door to the south, toward the oven
   ];
   // Champlain drew everything square and in line. Real builders weren't so tidy: each building is nudged up to
   // 0.6 m and turned up to 3 degrees, the same way every time (from its letter), so the place looks lived in.
@@ -205,8 +225,12 @@ export async function buildScene(scene, make) {
   // C, the storehouse: at Champlain's spot it stood on the west bank, 10 m of slope under it and a huge stone foot to
   // match. 2026-11-19 (the user): moved inland, beside the Swiss quarters (D), on flat ground facing the square.
   const STORE_AT = [-40.5, -106];
+  // I, the kitchen: at Champlain's spot (and at plan 1020, 350) it stood on the beach of the west bank, inside the
+  // tide. 2026-11-19 (the user: nothing in the tidal zone): moved up onto the flat top of the island near the bake
+  // oven (H), north of the garden there, 0.8 m of slope under it.
+  const KITCHEN_AT = [-14, -155];
   for (const [letter, name, px, py, spec, [w, d], turn, what] of H) {
-    const [x0, z0] = letter === 'C' ? STORE_AT : plan(px, py);
+    const [x0, z0] = letter === 'C' ? STORE_AT : letter === 'I' ? KITCHEN_AT : plan(px, py);
     const shore = letter === 'C' || letter === 'I'; // I stands on the bank, C on a measured flat spot: nudge them least
     // P stood hard against the row Q on the plan (the island is no wider, so across it nothing spreads): 1.5 m east.
     // The forge E sits at the end of the carpenters' row F, which is longer now it has gaps: 1 m south.
@@ -274,11 +298,12 @@ export async function buildScene(scene, make) {
   // runs north up the open ground between the rows to the square.)
   const PATHS = [
     [PLACES.landing, [14, -114], P(655, 760), P(655, 640), P(655, 470)],    // up from the landing to the square
-    [P(655, 470), [-37, -120], [-47, -122], P(860, 262), P(990, 300)],     // past the storehouse to the kitchen
+    [P(655, 470), [-37, -120], [-47, -122], [-46, -147]],                 // past the storehouse to the woodpile
     [P(655, 640), P(840, 680), P(880, 795)],                               // to the bake oven
     [P(655, 640), P(600, 690), P(545, 700)],                               // to the well
     [P(655, 470), P(560, 488), P(360, 488), [-24, -66], [-25, -40]],       // the walk south, past the cemetery, to the chapel
     [[-24, -66], [2, -62]],                                                // to the gardens on the island
+    [P(880, 795), [-12, -152]],                                            // from the oven to the kitchen door
   ];
   const pathSegs = PATHS.flatMap((line) => line.slice(1).map((b, k) => [...line[k], ...b]));
   const squareWorn = [...P(655, 445), 7];
@@ -340,10 +365,10 @@ export async function buildScene(scene, make) {
   }
   const batterySouth = F.battery(2);
   batterySouth.name = 'battery_south';
-  place(batterySouth, ...PLACES.batterySouth, Math.PI, root); // guns facing south, down the river
+  place(batterySouth, ...PLACES.batterySouth, 0, root); // guns facing south, down the river (the battery's front is +z)
   const batteryNorth = F.battery(2);
   batteryNorth.name = 'battery_north';
-  place(batteryNorth, ...PLACES.batteryNorth, 0.2, root); // guns facing north, up the river
+  place(batteryNorth, ...PLACES.batteryNorth, Math.PI + 0.2, root); // guns facing north, up the river
   batteryNorth.position.y -= 0.3;
   batterySouth.userData.info = 'battery_south';
   batteryNorth.userData.info = 'battery_north';
@@ -354,7 +379,9 @@ export async function buildScene(scene, make) {
   place(wood, ...plan(980, 380), PLAN_ROT, root);
   wood.userData.info = 'woodpile';
   const planks = F.plankPile(8);
-  place(planks, PLACES.landing[0] - 6, PLACES.landing[1] - 4, PLAN_ROT, root);
+  // stacked at the top of the bank above the landing (the beach below is under water at high tide), along the slope
+  place(planks, 6.5, -120.5, -0.87, root);
+  planks.position.y = heightAt(6.5, -120.5) - 0.04;
 
   // G: rocky shoals around the island, thickest off the south end and in a fan to the north-east
   {
@@ -473,12 +500,12 @@ export async function buildScene(scene, make) {
   const fire = smoke(root, [cx + 2, ground(cx + 2, cz + 7) + 0.6, cz + 7], { size: 1.6 });
   fire.kind = 'camp';
   smokes.push(fire);
-  for (const [x, z, r] of [[0, 0, 2.2], [4, 3, 2.4], [-3, 5, 2.1]]) place(await make('canoe_birch'), PLACES.campBeach[0] + x, PLACES.campBeach[1] + z, r, camp);
+  for (const [x, z, r] of [[0, 0, 2.2], [4, 3, 2.4], [-3, 5, 2.1]]) beach(await make('canoe_birch'), PLACES.campBeach[0] + x, PLACES.campBeach[1] + z, r, camp);
   const march = new THREE.Group();
   march.name = 'march_canoes';
   root.add(march);
   // spring 1605: the Passamaquoddy came back from their winter camps to the shores of the island, and helped (NPS)
-  for (const [x, z, r] of [[0, 0, 1.2], [5, 4, 1.4]]) place(await make('canoe_birch'), PLACES.marchBeach[0] + x, PLACES.marchBeach[1] + z, r, march);
+  for (const [x, z, r] of [[0, 0, 0], [-2.5, -3.7, 0.79]]) beach(await make('canoe_birch'), PLACES.marchBeach[0] + x, PLACES.marchBeach[1] + z, r, march);
 
   // ---------------------------------------------------------------- place names
 
@@ -550,7 +577,10 @@ export async function buildScene(scene, make) {
   }
   const lm = beds[1].position; // L
   french({ x: lm.x + 2, z: lm.z, heading: 1, action: 'hoe', tool: 'hoe', when: (st) => onIsland(st) && isSummer(st) && st.stop !== 'leaving' });
-  const toHouses = PATHS[0]; // the boards come up the footpath from the landing
+  // the boards come up the footpath from the landing, from the water's edge at the top of the tide (the landing
+  // itself is out on the beach, under water at high tide)
+  const shoreEdge = [22, -113];
+  const toHouses = [shoreEdge, ...PATHS[0].slice(1)];
   for (let i = 0; i < 4; i++) {
     french({ x: toHouses[0][0], z: toHouses[0][1], heading: 0, action: 'shoulder', tool: 'plank', path: toHouses, speed: 1.1, offset: i * 0.25,
       when: (st) => onIsland(st) && st.month < 2.5 && st.stop !== 'leaving' });
@@ -593,10 +623,13 @@ export async function buildScene(scene, make) {
   }
   // spring 1605: Peskotomuhkati people ashore on the island, and French who came down to meet them
   const mb = PLACES.marchBeach;
-  for (let i = 0; i < 3; i++) peskotomuhkati({ x: mb[0] + 3 + i * 1.4, z: mb[1] - 3 + i, heading: -0.6, winter: true, action: i === 1 ? 'chat' : 'idle', when: (st) => march.visible });
-  for (let i = 0; i < 2; i++) french({ x: mb[0] + 7 + i * 1.2, z: mb[1] - 7 - i, heading: 2.4, action: i ? 'idle' : 'chat', hat: 'monmouth', when: (st) => march.visible });
+  // (the Peskotomuhkati just above their canoes, the French coming down the bank: all above the top of the tide)
+  const meet = [mb[0] + 6, mb[1] + 3.8];
+  [[-0.5, 2.3], [1, 2.8], [2.5, 2]].forEach(([dx, dz], i) => { const p = [mb[0] + dx, mb[1] + dz]; peskotomuhkati({ x: p[0], z: p[1], heading: face(p, meet), winter: true, action: i === 1 ? 'chat' : 'idle', when: (st) => march.visible }); });
+  [[6, 3.8], [7.4, 4.9]].forEach(([dx, dz], i) => { const p = [mb[0] + dx, mb[1] + dz]; french({ x: p[0], z: p[1], heading: face(p, [mb[0] + 1, mb[1] + 2.5]), action: i ? 'idle' : 'chat', hat: 'monmouth', when: (st) => march.visible }); });
   // leaving: men carry the boards down to the landing; the shallop takes them out to the ship
-  const toBoats = [...PATHS[0]].reverse();
+  // (they stop at the water's edge at the top of the tide, not out on the beach)
+  const toBoats = [...toHouses].reverse();
   for (let i = 0; i < 8; i++) french({ x: toBoats[0][0], z: toBoats[0][1], heading: 0, action: 'shoulder', tool: 'plank', path: toBoats, speed: 1.2, offset: i / 8, when: (st) => st.stop === 'leaving' });
   const rowers = [-1.5, 0, 1.5].map((dx) => french({ x: 0, z: 0, heading: 0, action: 'row', hat: 'monmouth', when: (st) => st.stop === 'leaving', boat: dx, y: f => f.deckHeight }));
 
@@ -759,7 +792,7 @@ export async function buildScene(scene, make) {
     paths: { segs: pathSegs, square: squareWorn },
     // for free roam (explore.js): what can be clicked, and the means to add the scenes' people and props
     explore: {
-      root, crowd, french, peskotomuhkati, plan, ground, PLACES, glow,
+      root, crowd, french, peskotomuhkati, plan, ground: stand, PLACES, glow,
       targets: [...buildings, wellM, tree, ...beds, ...crosses, batterySouth, batteryNorth, flake, wood, mill, charcoal, ship, camp],
       // roam: on or off; season: 'summer' or 'winter' (who shows is decided again on the next setMonth)
       setRoam(on, season) {
@@ -804,6 +837,14 @@ export async function buildScene(scene, make) {
         }
       }
       detail.update(dt, t, tide);
+      // canoes drawn up on a beach: aground at low tide, afloat and level when the water reaches them
+      for (const b of beached) {
+        const u = b.userData.beached, fy = tide - 0.12 + Math.sin(t * 0.9 + u.ph) * 0.03;
+        const k = THREE.MathUtils.clamp((fy - u.y) / 0.25, 0, 1);
+        b.position.y = Math.max(u.y, fy);
+        b.rotation.x = u.rx * (1 - k);
+        b.rotation.z = u.rz * (1 - k);
+      }
       mill.userData.wheel.rotation.z -= dt * 0.8;
       for (const s of smokes) s(dt);
       stepDismantle(dt);
@@ -813,6 +854,7 @@ export async function buildScene(scene, make) {
       // the oars follow their rower's stroke (the same sine as ACTIONS.row in people.js)
       for (const o of oars) {
         const f = rowers[[-1.5, 0, 1.5].indexOf(o.userData.x)];
+        o.visible = !f.hidden; // no rower, no oars (they are stowed)
         const s = Math.sin(Math.PI * (t + f.phase) + f.seed);
         o.rotation.y = o.userData.side * 0.45 * s;
         o.rotation.x = o.userData.side * (0.2 + 0.1 * Math.cos(Math.PI * (t + f.phase) + f.seed));
@@ -836,7 +878,7 @@ export async function buildScene(scene, make) {
         ride(f,ship,x,y,z,facing);
       }
       for (const f of crowd.list) if (f.path && !f.hidden) walk(f, t);
-      if (camera) crowd.update(dt, t, { camera, groundY: ground, range: 900 });
+      if (camera) crowd.update(dt, t, { camera, groundY: stand, range: 900 });
     },
     pickable: (name) => pickObj[name],
   };

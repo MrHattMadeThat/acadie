@@ -12,8 +12,10 @@
 
     <!-- the stop tabs, and Champlain's two maps of 1613 beside them -->
     <div id="topbar">
+      <button id="title-btn" class="maps-btn" type="button" title="Back to the title screen. Your answers are kept.">Menu</button>
       <nav id="chapter-index" aria-label="Chapter stops and question progress"></nav>
       <button id="maps-btn" class="maps-btn" type="button" title="Champlain&rsquo;s maps (1613)" aria-label="Champlain&rsquo;s maps (1613)" aria-expanded="false" hidden>Maps</button>
+      <button id="sources-btn" class="maps-btn" type="button" title="The sources: Champlain&rsquo;s own book, and what historians say">Sources</button>
     </div>
 
     <!-- what this stop is about, over the scene -->
@@ -51,6 +53,7 @@
       </header>
       <div id="task" class="task"></div>
       <footer class="panel-foot">
+        <button id="source-btn" class="paint-button" type="button" title="Read the sources behind this answer" hidden>&#128220; Source</button>
         <button id="next" class="paint-button primary next" type="button" hidden></button>
       </footer>
     </aside>
@@ -78,12 +81,13 @@
 
     <nav id="roam-tools" class="paint-box" aria-label="Free roam controls" hidden>
       <button id="roam-back" class="paint-button" type="button">Back to title</button>
+      <button id="roam-sources" class="paint-button" type="button">Sources</button>
       <div class="seasons" role="group" aria-label="Season">
         <button type="button" data-season="summer" aria-pressed="true">Summer 1604</button>
         <button type="button" data-season="winter" aria-pressed="false">Winter 1604&ndash;05</button>
       </div>
       <!-- the key dot is drawn like the scene markers (.tag.scene-mark in style.css) -->
-      <span>Click a building, or a gold dot <i aria-hidden="true" style="display: inline-block; width: 13px; height: 13px; vertical-align: -1px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 2px var(--frame-ink);"></i> to watch what happened there. Drag to look, right-drag to pan, scroll to zoom.</span>
+      <span>Click a building, or a gold dot <i aria-hidden="true" style="display: inline-block; width: 13px; height: 13px; vertical-align: -1px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 2px var(--frame-ink);"></i> to watch what happened there. W A S D or arrow keys to move, Q and E to turn. Drag to look, right-drag to slide, scroll to zoom.</span>
     </nav>
 
     <!-- free roam: a building's story, or a scene as it plays (explore.js) -->

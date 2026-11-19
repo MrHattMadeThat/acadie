@@ -238,11 +238,12 @@ export function garden(w, d, rows, ground, formal = false) {
 }
 
 // A cannon on a wooden carriage.
+// The muzzle (the narrow end) points +x, out past the front of the carriage.
 export function cannon() {
   const root = new THREE.Group();
   root.name = 'cannon';
   const iron = mat('#3b3d40', { metalness: 0.6, roughness: 0.5 });
-  root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.22, 2.2, 10).rotateZ(Math.PI / 2).translate(0.3, 0.75, 0), iron));
+  root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.22, 2.2, 10).rotateZ(-Math.PI / 2).translate(0.3, 0.75, 0), iron));
   const wood = mat('#6e5238');
   root.add(new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.35, 0.7).translate(-0.1, 0.45, 0), wood));
   for (const x of [-0.5, 0.4]) for (const z of [-0.42, 0.42]) root.add(new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.1, 10).rotateX(Math.PI / 2).translate(x, 0.28, z), wood));
@@ -806,7 +807,7 @@ export function bakehouse() {
   return root;
 }
 
-// An earth platform faced with wicker gabions, with cannon on it (C and D on the map).
+// An earth platform faced with wicker gabions, with cannon on it (C and D on the map). The guns and the gabions face +z.
 export function battery(guns = 2) {
   const root = new THREE.Group();
   root.name = 'battery';
