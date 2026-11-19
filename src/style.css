@@ -279,6 +279,17 @@ body.intro #panel, body.intro #chapter-index, body.intro .caption { display: non
 .mapcard .route { fill: none; stroke: var(--red); stroke-width: 4; stroke-dasharray: 10 8; pointer-events: none; }
 .mapcard .miss { fill: none; stroke: var(--bad); stroke-width: 3; pointer-events: none; }
 body.mapping #chapter-index, body.mapping .caption, body.mapping .calendar { visibility: hidden; }
+/* mapmatch: numbered markers, and a tray of names under the map */
+.mapcard .pin { cursor: pointer; outline: none; }
+.mapcard .pin circle { fill: var(--ink); stroke: #fff; transition: fill .12s; }
+.mapcard .pin text { fill: #fff; font-family: var(--sans); font-weight: 700; text-anchor: middle; pointer-events: none; }
+.mapcard .pin.over circle, .mapcard .pin:focus-visible circle { fill: var(--gold); }
+.mapcard .pin.named { pointer-events: none; }
+.mapcard .pin.named circle { fill: var(--red); }
+.mapcard .mark-label.found { fill: var(--red); }
+.mapcard svg:has(.pin) { cursor: default; }
+.mapcard .tray { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; min-height: 40px; }
+.mapcard .map-chip.picked { outline: 3px solid var(--gold); outline-offset: 1px; }
 
 /* ------------------------------------------------ place names over the river */
 .tag.place { background: rgba(31, 58, 95, .82); color: var(--shell); font-size: 14px; }

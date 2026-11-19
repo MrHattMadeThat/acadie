@@ -42,6 +42,17 @@ for (const s of STOPS) {
       if (!t.answer?.length || !t.hints?.early || !t.hints?.late) fail(w, 'when needs answer and hints');
     } else if (t.type === 'mapfind') {
       if (!t.target?.at || !t.target?.r || !t.hint) fail(w, 'mapfind needs target.at, target.r and hint');
+    } else if (t.type === 'mapmatch') {
+      if (t.view?.length !== 4) fail(w, 'mapmatch needs view: [west, south, east, north]');
+      const [W, S, E, N] = t.view || [];
+      const ids = new Set();
+      for (const p of [...(t.fixed || []), ...t.items]) {
+        if (ids.has(p.id)) fail(w, `place ${p.id} is listed twice`);
+        ids.add(p.id);
+        if (!(p.at?.[0] > W && p.at[0] < E && p.at[1] > S && p.at[1] < N)) fail(w, `${p.id} is outside the view`);
+      }
+      t.items.forEach((it) => { if (!it.hint) fail(w, `${it.id} needs a hint`); });
+      (t.route || []).forEach((id) => { if (!ids.has(id)) fail(w, `route names ${id}, which isn't on the map`); });
     } else fail(w, `unknown type ${t.type}`);
   });
 }

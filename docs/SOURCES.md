@@ -13,14 +13,14 @@ come from:
 | In March 1605, Passamaquoddy people brought fresh game to the island and traded it for bread and other goods | `neighbours` question 2, calendar March 1605 | NPS, Saint Croix Island timeline; The Canadian Encyclopedia, "Île Ste-Croix: the birth of Acadia" |
 | Cannon in two places: on a little islet off the south end (C) and on a platform at the north end (D) | both batteries; the island stop's cannon question | Champlain's map of the island (1613); NPS also describes the fortified islet |
 | The island and the nearby mainland were cleared | no trees on the island | NPS, "Saint Croix Island Settlement" |
-| Snow from October 6, 1604; ice in the river from early December | the calendar, the two `when` questions | Champlain's account, as summarised by NPS ("snow began early") |
+| Snow from October 6, 1604; ice in the river from early December | the calendar (no question asks for these months since 2026-11-18) | Champlain's account, as summarised by NPS ("snow began early") |
 | Spring came in May and the sick recovered | calendar May 1605 | NPS, "Saint Croix Island Settlement" |
 | A supply ship arrived on June 15, 1605 | calendar June 1605 | NPS, "Saint Croix Island Settlement" |
 | In summer 1605 de Mons explored south with a guide named Panounias | calendar July 1605 | NPS, "Saint Croix Island Settlement" |
 | The habitation, building by building: A de Mons's house, B the public house, C the storehouse, D the Swiss, E the forge, F the carpenters, G the well, H the bake oven, I the kitchen, L M X gardens, N the square with a tree, O the palisade, P Q R T lodgings, V the priest | the 3D habitation | Champlain's plan of the habitation (1613). The University of Maine notes the plan may be tidier than what was built. |
 | The island: A habitation, B gardens, E cemetery, F chapel, G rocky shoals, H a small islet; on the mainland I the water mill de Mons began, L the charcoal place, M and N gardens west and east | the island and both shores | Champlain's map of the island (1613), fitted to the real outline by `scripts/champlain-fit.mjs` |
 | "Rivière des Etechemins" (P on the map): the Etechemin were ancestors of today's Passamaquoddy | the map viewer's note | The Canadian Encyclopedia |
-| St. Croix Island is at about 45.1° N; Bordeaux is at about 44.8° N | `leaving` question 4, a wrong answer's explanation | Geography |
+| Port Royal's habitation stood on the Annapolis Basin, at about 44.71° N, 65.61° W | the Port Royal markers on the two map questions | Parks Canada, Port-Royal National Historic Site |
 
 Still to confirm against a primary source: the exact dates of first snow and first ice (Champlain's *Voyages*),
 and whether the March 1605 visitors are best called Passamaquoddy or Etchemin (the sources use both).

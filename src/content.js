@@ -10,7 +10,8 @@
 //   match    give each item one of the choices; `pick` links an item to a named 3D part in the scene
 //   answer3  build a three-part written answer: claim, detail, why it matters
 //   when     move the calendar to a month and say "this one" (the stop must show the calendar)
-//   mapfind  tap a place on a map of the Maritimes
+//   mapfind  tap a place on a map of the Maritimes (not used since 2026-11-18: too hard to place on a coarse map)
+//   mapmatch put each name on a numbered marker on a map zoomed to `view`
 //
 // Each stop also says which month the scene shows (0 = June 1604 ... 14 = August 1605, see world.js MONTHS).
 
@@ -52,10 +53,10 @@ export const STOPS = [
         type: 'match',
         prompt: 'A trade is happening beside the ship. Who brought each thing?',
         items: [
-          { id: 'pelts', label: 'Beaver pelts', pick: 'pelts', answer: 'w' },
-          { id: 'kettle', label: 'Iron kettle', pick: 'trade_kettle', answer: 'f' },
-          { id: 'axe', label: 'Axe', pick: 'axe', answer: 'f' },
-          { id: 'cloth', label: 'Cloth', pick: 'cloth', answer: 'f' },
+          { id: 'pelts', label: 'Beaver pelts', answer: 'w' },
+          { id: 'kettle', label: 'Iron kettle', answer: 'f' },
+          { id: 'axe', label: 'Axe', answer: 'f' },
+          { id: 'cloth', label: 'Cloth', answer: 'f' },
         ],
         choices: [
           { id: 'w', label: 'Wabanaki traders' },
@@ -219,20 +220,16 @@ export const STOPS = [
       'and the Peskotomuhkati families who lived here.',
     tasks: [
       {
-        type: 'when',
-        prompt: 'Move through the months. Stop on the month the first snow fell, then press “This month”.',
-        answer: [4],
-        hints: { early: 'Not yet. Keep going.', late: 'The snow came before that. Go back a little.' },
-        // Champlain: snow from October 6, 1604. NPS says snow began early.
-        explain: 'The first snow fell in October. Champlain wrote: “There are six months of winter in that country.”',
-      },
-      {
-        type: 'when',
-        prompt: 'Now find the month the river ice cut the island off from both shores.',
-        answer: [6],
-        hints: { early: 'The river is still open. Keep going.', late: 'The island was already cut off by then. Go back.' },
-        // Champlain: ice in the river from early December 1604.
-        explain: 'By December, chunks of ice filled the river and moved with the tide. Boats could not cross to either shore.',
+        type: 'choice',
+        lead: 'Slide the calendar back to June, then slowly into the winter. Watch the Firewood, Fresh water and Fresh food bars on both sides.',
+        prompt: 'What happens to the bars in the winter?',
+        options: [
+          { text: 'The French bars drop almost to nothing. The Peskotomuhkati bars stay full.', correct: true },
+          { text: 'Both sides run out', why: 'Look at the Peskotomuhkati side again. Their bars stay full all winter.' },
+          { text: 'Both sides stay full all year', why: 'Look at the French side in December and January.' },
+          { text: 'The Peskotomuhkati run out, and the French stay full', why: 'It was the other way around. Watch both sides as you slide.' },
+        ],
+        explain: 'Same river, same winter. The families moved to where the firewood, water and food were. The French stayed on the island, and the ice cut them off from all three.',
       },
       {
         type: 'choice',
@@ -393,11 +390,17 @@ export const STOPS = [
         explain: 'They took the buildings apart board by board. Only the stone footings stayed behind.',
       },
       {
-        type: 'mapfind',
-        prompt: 'Port Royal is across the Bay of Fundy, on the far shore. Find it on the map.',
-        target: { at: [-65.52, 44.73], r: 0.35, label: 'Port Royal' },
-        start: { at: [-67.134, 45.128], label: 'St. Croix Island' },
-        hint: 'Cross the Bay of Fundy to the south-east, to the shore of what is now Nova Scotia.',
+        type: 'mapmatch',
+        prompt: 'The French sailed from St. Croix Island, across the Bay of Fundy, to Port Royal. Put each name on its number.',
+        view: [-68.4, 43.9, -64.0, 45.8],
+        regions: [['New Brunswick', [-65.6, 45.65]], ['Nova Scotia', [-64.75, 44.35]], ['Maine', [-68.0, 45.05]]],
+        items: [
+          { id: 'stcroix', label: 'St. Croix Island', at: [-67.134, 45.128], side: 'above', hint: 'The island is in the river between Maine and New Brunswick.' },
+          { id: 'fundy', label: 'Bay of Fundy', at: [-66.0, 45.0], hint: 'The bay is the water, not the land.' },
+          // Port-Royal National Historic Site (Parks Canada): 44.71 N, 65.61 W, on the Annapolis Basin.
+          { id: 'portroyal', label: 'Port Royal', at: [-65.61, 44.71], hint: 'Port Royal is across the bay, on the Nova Scotia side.' },
+        ],
+        route: ['stcroix', 'portroyal'],
         explain: 'Port Royal is on the Nova Scotia side of the Bay of Fundy, in a sheltered harbour.',
       },
       {
@@ -410,18 +413,6 @@ export const STOPS = [
           { text: 'They went home to France for the winter', why: 'No. They stayed. That was the whole plan.' },
         ],
         explain: 'The winter was milder, and the Mi’kmaq who lived nearby traded them fresh meat for French bread.',
-      },
-      {
-        type: 'choice',
-        prompt: 'What was the first lesson the French learned about this place?',
-        options: [
-          { text: 'They could not do it alone', correct: true },
-          { text: 'Islands are the safest place to spend a winter', why: 'The island nearly killed them all.' },
-          { text: 'Winters here are just like winters in France', why: 'St. Croix Island is about as far north as Bordeaux, in the south of France. The French expected French weather. They were wrong.' },
-          { text: 'Nobody else lived here', why: 'People had lived here for thousands of years. That was the lesson.' },
-        ],
-        // Beyond the reading: St. Croix Island is at about 45.1° N; Bordeaux is at about 44.8° N.
-        explain: 'They could not do it alone. They needed the knowledge, the trade and the help of the people who already lived here.',
       },
     ],
   },
@@ -437,19 +428,18 @@ export const STOPS = [
       'St. Croix Island and Port Royal were both in Acadie. So is St. George.',
     tasks: [
       {
-        type: 'mapfind',
-        prompt: 'The French called the Bay of Fundy the Baye Françoise, the French Bay. Find it on the map.',
-        target: { at: [-65.95, 45.0], r: 0.5, label: 'Baye Françoise (Bay of Fundy)' },
-        hint: 'It is the long bay between New Brunswick and Nova Scotia.',
-        explain: 'The Bay of Fundy sits right in the middle of Acadie. Most Acadian villages grew up around its shores.',
-      },
-      {
-        type: 'mapfind',
-        prompt: 'Now find where St. George would be.',
-        target: { at: [-66.83, 45.13], r: 0.18, label: 'St. George' },
-        start: { at: [-67.134, 45.128], label: 'St. Croix Island' },
-        hint: 'Start at St. Croix Island and go a little east, along the New Brunswick shore.',
-        explain: 'St. George is only about 25 km east of St. Croix Island. This story happened in our own backyard.',
+        type: 'mapmatch',
+        lead: 'The French called the Bay of Fundy the Baye Françoise, the French Bay.',
+        prompt: 'Find the Baye Françoise, Port Royal, and where St. George would be. Put each name on its number.',
+        view: [-68.4, 43.9, -64.0, 45.8],
+        regions: [['New Brunswick', [-65.6, 45.65]], ['Nova Scotia', [-64.75, 44.35]], ['Maine', [-68.0, 45.05]]],
+        fixed: [{ id: 'stcroix', label: 'St. Croix Island', at: [-67.134, 45.128], side: 'above' }],
+        items: [
+          { id: 'fundy', label: 'Baye Françoise', at: [-66.0, 45.0], hint: 'The Baye Françoise is the bay itself, the water between New Brunswick and Nova Scotia.' },
+          { id: 'portroyal', label: 'Port Royal', at: [-65.61, 44.71], hint: 'Port Royal is across the bay, on the Nova Scotia side.' },
+          { id: 'stgeorge', label: 'St. George', at: [-66.83, 45.13], side: 'below', hint: 'St. George is a little east of St. Croix Island, on the New Brunswick shore.' },
+        ],
+        explain: 'The Bay of Fundy sits right in the middle of Acadie, and most Acadian villages grew up around its shores. St. George is only about 25 km east of St. Croix Island. This story happened in our own backyard.',
       },
       {
         type: 'multi',

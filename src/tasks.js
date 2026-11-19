@@ -104,7 +104,7 @@ export function renderTask(host, task, hooks) {
   if (task.lead) body.append(el('p', 'lead', task.lead)); // a little setup before the question
   body.append(el('p', 'prompt', task.prompt));
   host.append(body, foot);
-  const kind = { choice, multi, order, match, answer3, when, mapfind }[task.type];
+  const kind = { choice, multi, order, match, answer3, when, mapfind, mapmatch }[task.type];
   return kind(body, footer(foot), task, hooks) || { pick() {} };
 }
 
@@ -553,5 +553,128 @@ function mapfind(body, fb, task, hooks) {
       setTimeout(() => miss.remove(), 1200);
       fb.say(task.hint, 'bad');
     }
+  });
+}
+
+// ------------------------------------------------------------------ mapmatch
+
+// A map zoomed to `task.view` ([west, south, east, north]) with a numbered marker for each place. Drag each name onto
+// its marker, or tap a name and then a marker. `task.fixed` places are already named, as landmarks.
+// A marker's `side` ('right', 'left', 'above' or 'below') says where its name goes once placed, so names stay clear.
+function mapmatch(body, fb, task, hooks) {
+  body.append(el('p', 'hint', 'Drag each name onto its number on the map. Or tap a name, then tap a number.'));
+  const [w, s, e, n] = task.view;
+  const [x0, y0] = project([w, n]), [x1, y1] = project([e, s]);
+  const vw = x1 - x0, vh = y1 - y0;
+  const k = vw / 450; // marker and text size, so they read the same at any zoom
+
+  const card = el('div', 'mapcard');
+  const map = svg('svg', { viewBox: `${x0} ${y0} ${vw} ${vh}`, role: 'img', 'aria-label': 'Map of the Bay of Fundy' });
+  // the card is wider than the view, so the svg shows more than the view: the sea covers the whole map
+  map.append(svg('rect', { width: MAP.w, height: MAP.h, class: 'sea' }));
+  const L = MAP.land;
+  for (const key of ['me', 'qc', 'nb', 'ns', 'pe']) map.append(svg('path', { d: L[key], class: 'land' }));
+  for (const key of ['me', 'qc', 'nb', 'ns', 'pe']) map.append(svg('path', { d: L[key], class: 'coast', style: `stroke-width:${1.4 * k}` }));
+  for (const [name, at] of task.regions || []) {
+    const [x, y] = project(at);
+    map.append(svg('text', { x, y, class: 'region-label', style: `font-size:${20 * k}px` }, name));
+  }
+  const names = svg('g');
+  const pins = svg('g');
+  map.append(names, pins);
+
+  const nameAt = (p, label, cls) => {
+    const [x, y] = project(p.at);
+    const side = p.side || 'right';
+    const [dx, dy, anchor] = { left: [-18, 7, 'end'], right: [18, 7, 'start'], above: [0, -20, 'middle'], below: [0, 34, 'middle'] }[side];
+    names.append(svg('text', {
+      x: x + dx * k, y: y + dy * k, class: `mark-label ${cls}`,
+      style: `font-size:${20 * k}px;stroke-width:${5 * k}px;text-anchor:${anchor}`,
+    }, label));
+  };
+  for (const f of task.fixed || []) {
+    const [x, y] = project(f.at);
+    pins.append(svg('circle', { cx: x, cy: y, r: 7 * k, class: 'mark start', style: `stroke-width:${2.5 * k}` }));
+    nameAt(f, f.label, 'start');
+  }
+  const pinEls = {};
+  task.items.forEach((it, i) => {
+    const [x, y] = project(it.at);
+    const g = svg('g', { class: 'pin', 'data-pin': it.id, tabindex: 0 });
+    g.append(svg('circle', { cx: x, cy: y, r: 13 * k, style: `stroke-width:${2.5 * k}` }));
+    g.append(svg('text', { x, y: y + 6 * k, style: `font-size:${17 * k}px` }, String(i + 1)));
+    pins.append(g);
+    pinEls[it.id] = g;
+  });
+
+  const tray = el('div', 'tray');
+  card.append(map, tray);
+  document.body.append(card);
+  document.body.classList.add('mapping');
+  cleanup = () => { card.remove(); document.body.classList.remove('mapping'); };
+
+  const placed = new Set();
+  let wrong = 0, selected = null, over = null;
+  const pinAt = (x, y) => document.elementsFromPoint(x, y).map((e) => e.closest?.('[data-pin]')).find(Boolean)?.dataset.pin || null;
+  const hover = (id) => {
+    if (over === id) return;
+    if (over) pinEls[over].classList.remove('over');
+    over = id;
+    if (over && !placed.has(over)) pinEls[over].classList.add('over');
+  };
+
+  function drop(item, pinId, chip) {
+    hover(null);
+    if (!pinId || !chip) return;
+    if (placed.has(pinId)) { fb.say('That one already has its name. Try another number.', 'bad'); return; }
+    if (pinId === item.id) {
+      placed.add(pinId);
+      pinEls[pinId].classList.add('named');
+      nameAt(item, item.label, 'found');
+      chip.remove();
+      selected = null;
+      fb.say(`Yes: ${item.label}.`, 'good');
+      if (placed.size === task.items.length) {
+        if (task.route) {
+          const pt = (id) => project([...(task.fixed || []), ...task.items].find((p) => p.id === id).at);
+          const [[ax, ay], [bx, by]] = task.route.map(pt);
+          names.prepend(svg('path', { d: `M${ax} ${ay} Q ${(ax + bx) / 2} ${Math.max(ay, by) + 40 * k} ${bx} ${by}`, class: 'route', style: `stroke-width:${3 * k};stroke-dasharray:${8 * k} ${6 * k}` }));
+        }
+        body.querySelector('.hint')?.remove();
+        fb.solved('All named.', task.explain);
+        hooks.done({ firstTry: wrong === 0 });
+      }
+    } else {
+      wrong++;
+      chip.classList.remove('shake'); void chip.offsetWidth; chip.classList.add('shake');
+      const there = task.items.find((it) => it.id === pinId);
+      fb.say(`That number isn’t ${item.label}. ${item.hint || ''} ${there?.not ? there.not : ''}`.trim(), 'bad');
+    }
+  }
+
+  for (const item of shuffle(task.items)) {
+    const chip = button('chip map-chip', item.label);
+    chip.dataset.id = item.id;
+    draggable(chip, item.label, {
+      onMove: (x, y) => hover(pinAt(x, y)),
+      onDrop: (x, y) => drop(item, pinAt(x, y), chip),
+      onTap: () => {
+        tray.querySelectorAll('.map-chip').forEach((c) => c.classList.toggle('picked', c === chip && selected !== item));
+        selected = selected === item ? null : item;
+        fb.say(selected ? `Now tap the number for ${item.label}.` : '');
+      },
+    });
+    tray.append(chip);
+  }
+
+  map.addEventListener('click', (ev) => {
+    if (!selected) return;
+    drop(selected, pinAt(ev.clientX, ev.clientY), tray.querySelector(`[data-id="${selected.id}"]`));
+  });
+  map.addEventListener('keydown', (ev) => {
+    const id = ev.target.dataset?.pin;
+    if (!id || !selected || (ev.key !== 'Enter' && ev.key !== ' ')) return;
+    ev.preventDefault();
+    drop(selected, id, tray.querySelector(`[data-id="${selected.id}"]`));
   });
 }
