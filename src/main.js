@@ -346,12 +346,10 @@ function arrive(i) {
   const d = eye.distanceTo(look);
   controls.minDistance = d * 0.4;
   controls.maxDistance = d * 1.8;
+  // turn all the way round, as many times as you like (2026-11-18, the user: no wall at the sides)
   controls.minAzimuthAngle = -Infinity;
   controls.maxAzimuthAngle = Infinity;
   controls.update();
-  const az = controls.getAzimuthalAngle();
-  controls.minAzimuthAngle = az - 1.2;
-  controls.maxAzimuthAngle = az + 1.2;
   controls.minPolarAngle = 0.2;
   controls.maxPolarAngle = 1.45;
   controls.enabled = true;
@@ -570,6 +568,9 @@ $('roam').onclick = () => {
   controls.minDistance = 6;
   controls.maxDistance = 1800;
   controls.maxPolarAngle = Math.PI * .47;
+  controls.minAzimuthAngle = -Infinity; // no limit on turning round (a stop's limits don't carry over)
+  controls.maxAzimuthAngle = Infinity;
+  controls.minPolarAngle = 0;
   controls.listenToKeyEvents(orbitSurface);
   orbitSurface.tabIndex = 0;
   orbitSurface.setAttribute('aria-label', 'Explore the island. Arrow keys pan the view.');
