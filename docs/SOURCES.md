@@ -10,7 +10,7 @@ come from:
 
 | Fact | Where it is used | Source |
 |---|---|---|
-| In March 1605, Passamaquoddy people brought fresh game to the island and traded it for bread and other goods | `neighbours` question 2, calendar March 1605 | NPS, Saint Croix Island timeline; The Canadian Encyclopedia, "Île Ste-Croix: the birth of Acadia" |
+| In the spring of 1605 the Passamaquoddy came back from their winter camps to the shores of the island, and with their help the remaining French got healthier | `neighbours` stop (intro, question 2), calendar May 1605, the canoes on the island in May | NPS, Saint Croix Island "History & Culture" (nps.gov/sacr/learn/historyculture) |
 | Cannon in two places: on a little islet off the south end (C) and on a platform at the north end (D) | both batteries; the island stop's cannon question | Champlain's map of the island (1613); NPS also describes the fortified islet |
 | The island and the nearby mainland were cleared | no trees on the island | NPS, "Saint Croix Island Settlement" |
 | Snow from October 6, 1604; ice in the river from early December | the calendar (no question asks for these months since 2026-11-18) | Champlain's account, as summarised by NPS ("snow began early") |
@@ -22,10 +22,12 @@ come from:
 | "Rivière des Etechemins" (P on the map): the Etechemin were ancestors of today's Passamaquoddy | the map viewer's note | The Canadian Encyclopedia |
 | Port Royal's habitation stood on the Annapolis Basin, at about 44.71° N, 65.61° W | the Port Royal markers on the two map questions | Parks Canada, Port-Royal National Historic Site |
 
-Still to check (2026-11-18): the National Park Service's "Saint Croix Island Settlement" page puts the trade of
-fresh meat for French bread at Port Royal, the next winter, not at St. Croix in March 1605. The March question and
-the calendar card cite other sources for March 1605 (see the `neighbours` stop in `content.js`); confirm in
-Champlain's *Voyages* which winter it was.
+**Removed 2026-11-18 (couldn't be proven):** the chapter used to say that in March 1605 Peskotomuhkati canoes brought
+fresh meat to the island and traded it for bread. No page we could read backs the month or the meat: the NPS
+"Saint Croix Island Settlement" page puts the meat-for-bread trade at Port Royal the next winter (which the `leaving`
+stop still teaches, with the Mi'kmaq), and NPS "History & Culture" says only that the Passamaquoddy returned in the
+spring of 1605 and helped. The Canadian Encyclopedia article and the NPS timeline once cited for it could not be
+read. The teacher's rule: if we can't prove it, it goes. Bring the March visit back only with Champlain's own words.
 
 Still to confirm against a primary source: the exact dates of first snow and first ice (Champlain's *Voyages*),
 and whether the March 1605 visitors are best called Passamaquoddy or Etchemin (the sources use both).

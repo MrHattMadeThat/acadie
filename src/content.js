@@ -277,7 +277,7 @@ export const STOPS = [
           { text: 'They lived on salted and stored food, and were trapped on the island', correct: true },
           { text: 'There was no food anywhere around the river in winter', why: 'The Peskotomuhkati found food all winter. It just wasn’t on a small island.' },
           { text: 'They didn’t like the taste of the local food', why: 'No. They couldn’t get to it.' },
-          { text: 'The Peskotomuhkati refused to trade', why: 'No. In March, Peskotomuhkati people came to trade. You’ll see at the next stop.' },
+          { text: 'The Peskotomuhkati refused to trade', why: 'No. The families were away at their winter camps inland. When they came back in the spring, they helped.' },
         ],
         explain: 'The French brought what worked in France: stored food, and a fort on an island. Here, it left them trapped and hungry for fresh food.',
       },
@@ -288,11 +288,16 @@ export const STOPS = [
     id: 'neighbours',
     chapter: 'island',
     title: 'The people who lived here',
-    place: 'Peskotomuhkati homeland, March 1605',
-    month: 9,
+    place: 'Peskotomuhkati homeland, spring 1605',
+    month: 11,
+    // Beyond the reading: NPS, Saint Croix Island "History & Culture": "In the following spring of 1605, the
+    // Passamaquoddy returned from their winter sojourn to the shores of Saint Croix Island. With their help, the health
+    // of the remaining French improved." (Until 2026-11-18 this stop said canoes brought fresh meat in March 1605; no
+    // source we could read backs the month or the meat, so it is gone. See docs/SOURCES.md.)
     intro:
       'The Peskotomuhkati (Passamaquoddy) had lived around this river for thousands of years. Winter was hard for them ' +
-      'too, but they knew how to live through it. In March, two canoes came out to the island.',
+      'too, but they knew how to live through it. In the spring of 1605 they came back from their winter camps to the ' +
+      'shores around the island.',
     tasks: [
       {
         type: 'match',
@@ -312,16 +317,15 @@ export const STOPS = [
       },
       {
         type: 'choice',
-        // Beyond the reading: NPS timeline (nps.gov, Saint Croix Island) and The Canadian Encyclopedia,
-        // "Île Ste-Croix: the birth of Acadia": in March 1605 the Passamaquoddy brought fresh game to trade.
-        prompt: 'In March 1605, Peskotomuhkati people came out to the island. What did they bring to trade?',
+        // NPS, Saint Croix Island "History & Culture" (quoted at the top of this stop).
+        prompt: 'In the spring of 1605, the Peskotomuhkati came back to the shores around the island. What happened then?',
         options: [
-          { text: 'Fresh meat from their hunting', correct: true },
-          { text: 'Gold', why: 'No. They brought exactly what the sick men needed.' },
-          { text: 'Barrels of cider', why: 'Cider was French. Think about what the sick men were missing.' },
-          { text: 'Nothing. They came to attack', why: 'No. They came to trade.' },
+          { text: 'With their help, the French who were still alive got healthier', correct: true },
+          { text: 'They attacked the island', why: 'No. They helped.' },
+          { text: 'They moved into the French houses', why: 'No. The French stayed on the island until August 1605.' },
+          { text: 'Nothing. They stayed away from the French', why: 'No. The French got healthier with their help.' },
         ],
-        explain: 'They brought fresh game and traded it for bread and other goods. Fresh food was exactly what the sick men were missing.',
+        explain: 'The Peskotomuhkati came back from their winter camps in the spring. With their help, the French who had lived through the winter got healthier.',
       },
       {
         type: 'answer3',
@@ -477,6 +481,7 @@ export const STOPS = [
 // What each side of the river was doing, month by month (0 = June 1604). Shown on the two-calendar card.
 // French side: the reading, plus NPS "Saint Croix Island Settlement" for the supply ship (June 15, 1605), spring in May,
 // and de Mons's trip south with the guide Panounias. Snow from October 6 and ice from December are Champlain's.
+// May 1605: the Passamaquoddy's return and help in the spring is NPS "History & Culture" (see the neighbours stop).
 // Peskotomuhkati side: the seasonal round, in general terms, as taught in the Wabanaki unit and the reading.
 // `wood`, `water`, `fresh` are 0..1 (how easy each is to get); `well`, `sick`, `dead` count the 79 men and are
 // illustrative between the reading's two fixed points (79 at the start, 35 dead by spring).
@@ -490,9 +495,9 @@ export const CALENDAR = [
   { fr: 'Ice fills the river and moves with the tide. Boats can’t cross. The island is cut off.', pk: 'Hunting on snowshoes, travelling by toboggan.', wood: 0.15, water: 0.1, fresh: 0.05, sick: 8, dead: 1, camp: 'inland' },
   { fr: 'They melt snow to drink. The cider freezes and is handed out by the pound.', pk: 'Winter camps inland: fresh meat, shelter, firewood.', wood: 0.1, water: 0.1, fresh: 0, sick: 20, dead: 6, camp: 'inland' },
   { fr: 'Men are sick: swollen gums, loose teeth, swollen legs. Many die.', pk: 'Winter camps inland: fresh meat, shelter, firewood.', wood: 0.1, water: 0.1, fresh: 0, sick: 34, dead: 18, camp: 'inland' },
-  { fr: 'Peskotomuhkati people come to the island with fresh meat to trade.', pk: 'Some come out to the island to trade fresh game for bread.', wood: 0.15, water: 0.15, fresh: 0.3, sick: 30, dead: 28, camp: 'visit' },
+  { fr: 'Still winter on the island. Men are still dying of scurvy.', pk: 'Winter camps inland: fresh meat, shelter, firewood.', wood: 0.15, water: 0.15, fresh: 0, sick: 30, dead: 28, camp: 'inland' },
   { fr: 'The ice breaks up. Spring is late.', pk: 'Families come back down the rivers as the ice goes out.', wood: 0.5, water: 0.6, fresh: 0.3, sick: 22, dead: 34, camp: 'moving' },
-  { fr: 'Spring comes. With fresh food, the sick start to get better.', pk: 'Fish run up the rivers. Families return to the coast.', wood: 0.9, water: 1, fresh: 0.7, sick: 12, dead: 35, camp: 'coast' },
+  { fr: 'Spring comes. The Peskotomuhkati are back, and with their help the sick start to get better.', pk: 'Fish run up the rivers. Families return to the coast, and the shores around the island.', wood: 0.9, water: 1, fresh: 0.7, sick: 12, dead: 35, camp: 'coast' },
   { fr: 'A supply ship arrives from France, on June 15.', pk: 'Summer by the coast again.', wood: 1, water: 1, fresh: 0.8, sick: 4, dead: 35, camp: 'coast' },
   { fr: 'De Mons sails south along the coast, with a guide named Panounias, looking for a better place.', pk: 'Summer by the coast.', wood: 1, water: 1, fresh: 0.8, sick: 0, dead: 35, camp: 'coast' },
   { fr: 'They take the buildings apart and sail for Port Royal.', pk: 'Summer by the coast. The French are leaving.', wood: 1, water: 1, fresh: 0.8, sick: 0, dead: 35, camp: 'coast' },

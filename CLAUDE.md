@@ -15,6 +15,7 @@ own. Started 2026-11-18. Read `README.md` for the file map and `docs/SOURCES.md`
   didn't know. Use "Peskotomuhkati (Passamaquoddy)" the first time.
 - **Facts beyond the reading are welcome**, but each one goes in `docs/SOURCES.md` and gets a comment in
   `content.js`. Don't add facts from memory without a source.
+- **If it can't be proven, it goes** (2026-11-18). The March 1605 "fresh meat for bread" visit was cut for this.
 - Audience: Grade 8, lab PCs (16 GB, integrated graphics). Short sentences.
 
 ## Ground rules carried over from the Open Path
@@ -56,7 +57,8 @@ own. Started 2026-11-18. Read `README.md` for the file map and `docs/SOURCES.md`
   Island, at 1 m"). High tide cuts off both islets, half tide bares the spit and the rock ledge, low tide joins it
   all. `public/data/inset-kind.bin` marks sand and rock for the ground colours. The habitation is spread a little
   along the island (2026-11-18: `PLAN.along` 0.13 m a plan pixel from plan x 900, across it stays 0.1), each
-  building nudged and turned a touch (`jitter` in scene.js). Its middle is repeated in main.js (MAP_VIEWS.plan). The
+  building nudged and turned a touch (`jitter` in scene.js). The rows F, Q, R, T are separate cottages 1.6 m apart
+  (`ROW_GAP`), not one long building: the user wants room to walk between every building. Its middle is repeated in main.js (MAP_VIEWS.plan). The
   footpaths and the trodden square are `PATHS` in scene.js, drawn by the ground shader through `world.setPaths`.
 - Vite's dev server can serve a stale `meta.json` next to a new `inset.bin` after `npm run build:data`, which
   stretches the island. Reload with the cache bypassed.

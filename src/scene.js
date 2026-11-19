@@ -26,7 +26,7 @@ export const PLACES = {
   campBeach: [1128, -600],
   // On the island these follow Champlain's map, fitted to the island's real (mid-tide) outline: south of the
   // habitation the cemetery (E) toward the west shore, the gardens (B) toward the east, the chapel (F) south of both.
-  marchBeach: [-76, -42],  // where the canoes come ashore on the island in March 1605
+  marchBeach: [-76, -42],  // where Peskotomuhkati canoes come ashore on the island in the spring of 1605
   landing: [30, -110],     // the beach below the habitation, on the channel side
   islandGardens: [12, -60], // B
   cemetery: [-30, -62],    // E
@@ -180,13 +180,13 @@ export async function buildScene(scene, make) {
     ['C', 'storehouse', 805, 168, () => F.hall({ w: 22, d: 7, h: 3.4, name: 'storehouse', chimneyAt: null, doors: [[-6, 'door'], [-2, 'door'], [3, 'win'], [7, 'win']] }), [22, 7], 0, 'the storehouse'],
     ['D', 'swiss_quarters', 530, 200, () => F.hall({ w: 11, d: 6, h: 3, name: 'swiss_quarters' }), [11, 6], 0, 'the Swiss soldiers'],
     ['E', 'forge', 375, 425, () => F.rowHouse({ units: 1, unitW: 4.6, d: 7, name: 'forge', chimneys: [0] }), [4.6, 7], 0, 'the forge'],
-    ['F', 'carpenters', 480, 425, () => F.rowHouse({ units: 4, unitW: 4.2, d: 7, name: 'carpenters', chimneys: [1, 3] }), [16.8, 7], 0, 'the carpenters'],
+    ['F', 'carpenters', 480, 425, { units: 4, unitW: 4.2, d: 7, chimneys: [1, 3] }, [16.8, 7], 0, 'the carpenters'],
     ['A', 'demons_house', 822, 365, () => F.demonsHouse(), [9, 8], 0, 'the Sieur de Mons'],
     ['B', 'public_house', 905, 362, () => F.hall({ w: 9, d: 5, h: 4.4, name: 'public_house', kind: 'framed', chimneyAt: 0.3 }), [9, 5], Math.PI / 2, 'the public house, for rainy days'],
-    ['Q', 'lodging_q', 430, 545, () => F.rowHouse({ units: 4, unitW: 4.4, d: 7, name: 'lodging_q', chimneys: [0, 2, 3] }), [17.6, 7], 0, 'Boulay and other craftsmen'],
+    ['Q', 'lodging_q', 430, 545, { units: 4, unitW: 4.4, d: 7, chimneys: [0, 2, 3] }, [17.6, 7], 0, 'Boulay and other craftsmen'],
     ['P', 'lodging_p', 525, 612, () => F.rowHouse({ units: 1, unitW: 5.2, d: 6, h: 3.4, name: 'lodging_p', kind: 'framed', chimneys: [0] }), [5.2, 6], 0, "d'Orville, Champlain and Champdoré"],
-    ['R', 'lodging_r', 847, 545, () => F.rowHouse({ units: 2, unitW: 6.6, d: 7, h: 3.4, name: 'lodging_r', kind: 'framed', chimneys: [0, 1] }), [13.2, 7], 0, 'Genestou, Sourin and craftsmen'],
-    ['T', 'lodging_t', 748, 752, () => F.rowHouse({ units: 3, unitW: 4.4, d: 6, name: 'lodging_t', chimneys: [0, 2] }), [13.2, 6], 0, 'Beaumont, la Motte and Fougeray'],
+    ['R', 'lodging_r', 847, 545, { units: 2, unitW: 6.6, d: 7, h: 3.4, kind: 'framed', chimneys: [0, 1] }, [13.2, 7], 0, 'Genestou, Sourin and craftsmen'],
+    ['T', 'lodging_t', 748, 752, { units: 3, unitW: 4.4, d: 6, chimneys: [0, 2] }, [13.2, 6], 0, 'Beaumont, la Motte and Fougeray'],
     ['V', 'cure', 572, 770, () => F.hall({ w: 11, d: 6, h: 3, name: 'cure' }), [11, 6], 0, 'our priest'],
     ['H', 'bakehouse', 880, 838, () => F.bakehouse(), [7, 5], 0, 'the bake oven'],
     // I: Champlain draws the kitchen on the bank by the water, north-west of the houses. The real north end is
@@ -196,27 +196,44 @@ export async function buildScene(scene, make) {
   // Champlain drew everything square and in line. Real builders weren't so tidy: each building is nudged up to
   // 0.6 m and turned up to 3 degrees, the same way every time (from its letter), so the place looks lived in.
   const jitter = (letter, k) => { const v = Math.sin(letter.charCodeAt(0) * 12.9898 + k * 78.233) * 43758.5453; return (v - Math.floor(v)) * 2 - 1; };
-  for (const [letter, name, px, py, makeIt, [w, d], turn, what] of H) {
-    const b = makeIt();
-    b.name = name;
-    b.userData.info = name;
+  // Champlain drew the craftsmen's lodgings (F, Q, R, T) as rows of houses wall to wall. Here each row is its own
+  // cottages with a gap of ROW_GAP between them (2026-11-18, the user: room to walk between the buildings), each a
+  // little narrower than his units so the row stays near its length on the plan.
+  const ROW_GAP = 1.6, ROW_NARROW = 0.88;
+  for (const [letter, name, px, py, spec, [w, d], turn, what] of H) {
     const [x0, z0] = plan(px, py);
     const shore = letter === 'C' || letter === 'I'; // these two stand on the bank already: don't push them nearer the water
-    // P stood hard against the row Q on the plan (the island is no wider, so across it nothing spreads): 1.5 m east
-    const [ex, ez] = letter === 'P' ? [EAST.x * 1.5, EAST.y * 1.5] : [0, 0];
-    const x = x0 + ex + jitter(letter, 1) * (shore ? 0.2 : 0.6), z = z0 + ez + jitter(letter, 2) * (shore ? 0.2 : 0.6);
-    settle(b, x, z, PLAN_ROT + turn + jitter(letter, 3) * 0.05, w, d);
-    hab.add(b);
-    buildings.push(b);
-    b.userData.letter = letter;
-    for (const c of b.userData.chimneys || []) {
-      const v = new THREE.Vector3(...c).applyEuler(b.rotation).add(b.position);
-      smokes.push(Object.assign(smoke(root, [v.x, v.y, v.z]), { kind: 'chimney' }));
+    // P stood hard against the row Q on the plan (the island is no wider, so across it nothing spreads): 1.5 m east.
+    // The forge E sits at the end of the carpenters' row F, which is longer now it has gaps: 1 m south.
+    const [ex, ez] = letter === 'P' ? [EAST.x * 1.5, EAST.y * 1.5] : letter === 'E' ? [-NORTH.x, -NORTH.y] : [0, 0];
+    const row = typeof spec === 'function' ? null : spec;
+    const n = row ? row.units : 1, uw = row ? row.unitW * ROW_NARROW : w;
+    for (let i = 0; i < n; i++) {
+      const b = row
+        ? F.rowHouse({ units: 1, unitW: uw, d: row.d, h: row.h ?? 3, kind: row.kind ?? 'boards', name, chimneys: row.chimneys.includes(i) ? [0] : [] })
+        : spec();
+      b.name = name;
+      b.userData.info = name;
+      const along = (i - (n - 1) / 2) * (uw + ROW_GAP); // metres north along the row
+      const key = String.fromCharCode(letter.charCodeAt(0) + i * 7);
+      const nudge = shore ? 0.2 : row ? 0.25 : 0.6; // cottages in a row move less, so the gaps between them stay open
+      const x = x0 + ex + NORTH.x * along + jitter(key, 1) * nudge;
+      const z = z0 + ez + NORTH.y * along + jitter(key, 2) * nudge;
+      settle(b, x, z, PLAN_ROT + turn + jitter(key, 3) * 0.05, uw, d);
+      hab.add(b);
+      buildings.push(b);
+      b.userData.letter = letter;
+      for (const c of b.userData.chimneys || []) {
+        const v = new THREE.Vector3(...c).applyEuler(b.rotation).add(b.position);
+        smokes.push(Object.assign(smoke(root, [v.x, v.y, v.z]), { kind: 'chimney' }));
+      }
+      if (i === Math.floor((n - 1) / 2)) { // one letter for the row, over its middle
+        const t = letterTag(letter, what);
+        t.position.set(n % 2 ? 0 : (uw + ROW_GAP) / 2, 9, 0);
+        b.add(t);
+        letters.plan.push(t);
+      }
     }
-    const t = letterTag(letter, what);
-    t.position.set(0, 9, 0);
-    b.add(t);
-    letters.plan.push(t);
   }
   // the square (N) with its tree, the well (G), the palisade (O)
   const [nx, nz] = plan(655, 430);
@@ -434,7 +451,7 @@ export async function buildScene(scene, make) {
     }
   }
 
-  // ---------------------------------------------------------------- a Peskotomuhkati summer camp, and the March canoes
+  // ---------------------------------------------------------------- a Peskotomuhkati summer camp, and the spring canoes
 
   const camp = new THREE.Group();
   camp.name = 'summer_camp';
@@ -451,17 +468,8 @@ export async function buildScene(scene, make) {
   const march = new THREE.Group();
   march.name = 'march_canoes';
   root.add(march);
-  for (const [x, z, r] of [[0, 0, 1.2], [5, 4, 1.4]]) {
-    const c = await make('canoe_birch');
-    place(c, PLACES.marchBeach[0] + x, PLACES.marchBeach[1] + z, r, march);
-    // bundles of fresh meat, wrapped in hide
-    for (let k = 0; k < 3; k++) {
-      const b = new THREE.Mesh(new THREE.SphereGeometry(.25, 10, 8).scale(1.18, .6, .76), new THREE.MeshStandardMaterial({ color: '#7a5a3e', roughness: 1 }));
-      b.position.set(-.48 + k * .94, .215, 0);
-      b.castShadow = true;
-      c.add(b);
-    }
-  }
+  // spring 1605: the Passamaquoddy came back from their winter camps to the shores of the island, and helped (NPS)
+  for (const [x, z, r] of [[0, 0, 1.2], [5, 4, 1.4]]) place(await make('canoe_birch'), PLACES.marchBeach[0] + x, PLACES.marchBeach[1] + z, r, march);
 
   // ---------------------------------------------------------------- place names
 
@@ -574,7 +582,7 @@ export async function buildScene(scene, make) {
     const p = [cx + 2 + Math.cos(a) * r, cz + 8 + Math.sin(a) * r];
     peskotomuhkati({ x: p[0], z: p[1], heading: face(p, [cx + 2, cz + 8]), kind: i % 3 === 1 ? 'woman' : i === 5 ? 'boy' : 'man', action: i % 2 ? 'chat' : 'idle', when: (st) => camp.visible });
   }
-  // March 1605: Peskotomuhkati traders ashore with fresh meat, and French who came down to meet them
+  // spring 1605: Peskotomuhkati people ashore on the island, and French who came down to meet them
   const mb = PLACES.marchBeach;
   for (let i = 0; i < 3; i++) peskotomuhkati({ x: mb[0] + 3 + i * 1.4, z: mb[1] - 3 + i, heading: -0.6, winter: true, action: i === 1 ? 'chat' : 'idle', when: (st) => march.visible });
   for (let i = 0; i < 2; i++) french({ x: mb[0] + 7 + i * 1.2, z: mb[1] - 7 - i, heading: 2.4, action: i ? 'idle' : 'chat', hat: 'monmouth', when: (st) => march.visible });
@@ -633,7 +641,7 @@ export async function buildScene(scene, make) {
     const grow = m < 3 ? 0.3 + m * 0.25 : m < 10 ? 0 : m < 11 ? 0.1 : Math.min(1, 0.25 + (m - 11) * 0.3);
     beds.forEach((g) => g.userData.grow?.(grow));
     camp.visible = cal.camp === 'coast';
-    march.visible = Math.round(m) === 9;
+    march.visible = Math.round(m) === 11; // May 1605
     crosses.forEach((c, i) => { c.visible = i < cal.dead; });
     for (const s of smokes) s.on = s.kind === 'camp' ? camp.visible : s.kind === 'charcoal' ? m < 4 || m > 10.5 : m >= 3 && m <= 11 && st.dismantle < 0.2;
     const leaf = season('leaves', m);
